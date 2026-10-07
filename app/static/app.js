@@ -33,11 +33,64 @@ let currentJobId = null;
 let pollStartTime = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  initViewRouting();
   initTabs();
   initDemoData();
   initDropzone();
   initEventListeners();
 });
+
+// View Navigation & Router (Landing Page vs Dedicated App Workspace)
+function initViewRouting() {
+  const landingView = document.getElementById("view-landing");
+  const appView = document.getElementById("view-app");
+  const navLaunchBtn = document.getElementById("nav-launch-btn");
+
+  window.switchView = function(viewName) {
+    if (viewName === "app") {
+      landingView.className = "view-hidden";
+      appView.className = "view-active";
+      if (navLaunchBtn) navLaunchBtn.style.display = "none";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      history.pushState(null, "", "#app");
+    } else {
+      appView.className = "view-hidden";
+      landingView.className = "view-active";
+      if (navLaunchBtn) navLaunchBtn.style.display = "inline-flex";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      history.pushState(null, "", "#home");
+    }
+  };
+
+  // Launch buttons
+  document.getElementById("btn-hero-launch")?.addEventListener("click", () => switchView("app"));
+  document.getElementById("nav-launch-btn")?.addEventListener("click", () => switchView("app"));
+  document.getElementById("btn-cta-launch")?.addEventListener("click", () => switchView("app"));
+  document.getElementById("footer-launch-btn")?.addEventListener("click", () => switchView("app"));
+
+  // Back to landing buttons
+  document.getElementById("btn-back-to-landing")?.addEventListener("click", () => switchView("landing"));
+  document.getElementById("nav-brand")?.addEventListener("click", () => switchView("landing"));
+  document.getElementById("nav-home-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    switchView("landing");
+  });
+
+  // Handle URL hash on initial load
+  if (window.location.hash === "#app" || window.location.hash === "#console") {
+    switchView("app");
+  } else {
+    switchView("landing");
+  }
+
+  window.addEventListener("popstate", () => {
+    if (window.location.hash === "#app" || window.location.hash === "#console") {
+      switchView("app");
+    } else {
+      switchView("landing");
+    }
+  });
+}
 
 function initTabs() {
   const jsonBtn = document.getElementById("tab-json-btn");
@@ -68,7 +121,7 @@ function initDemoData() {
   document.getElementById("btn-load-demo").addEventListener("click", () => {
     textarea.value = JSON.stringify(DEMO_RECIPIENTS, null, 2);
     updateRecipientCountBadge(DEMO_RECIPIENTS.length);
-    showNotification("Demo batch loaded (5 recipients, including 1 fault test). Click Dispatch to run!");
+    showNotification("Demo batch loaded (5 recipients, including 1 fault test). Ready to dispatch!");
   });
 
   textarea.addEventListener("input", () => {
@@ -133,9 +186,17 @@ function initEventListeners() {
   document.getElementById("btn-refresh-status").addEventListener("click", () => {
     if (currentJobId) pollJobStatus(currentJobId);
   });
-  document.getElementById("btn-verify-code").addEventListener("click", handleVerify);
-  document.getElementById("verify-code-input").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") handleVerify();
+
+  // Landing page verification
+  document.getElementById("btn-landing-verify")?.addEventListener("click", () => {
+    const code = document.getElementById("landing-verify-code-input").value.trim();
+    executeVerification(code, "landing-verify-result-card");
+  });
+  document.getElementById("landing-verify-code-input")?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      const code = document.getElementById("landing-verify-code-input").value.trim();
+      executeVerification(code, "landing-verify-result-card");
+    }
   });
 }
 
@@ -248,7 +309,7 @@ function startJobTracking(jobId) {
 
   // Initial poll
   pollJobStatus(jobId);
-  pollingInterval = setInterval(() => pollJobStatus(jobId), 700);
+  pollingInterval = setInterval(() => pollJobStatus(jobId), 600);
 }
 
 async function pollJobStatus(jobId) {
@@ -367,14 +428,15 @@ async function loadJobCertificates(jobId) {
 }
 
 window.quickVerify = function(code) {
-  document.getElementById("verify-code-input").value = code;
+  switchView("landing");
+  const input = document.getElementById("landing-verify-code-input");
+  input.value = code;
   document.getElementById("verify").scrollIntoView({ behavior: "smooth" });
-  handleVerify();
+  executeVerification(code, "landing-verify-result-card");
 };
 
-async function handleVerify() {
-  const code = document.getElementById("verify-code-input").value.trim();
-  const card = document.getElementById("verify-result-card");
+async function executeVerification(code, cardElementId) {
+  const card = document.getElementById(cardElementId);
   if (!code) {
     alert("Please enter a credential code to verify.");
     return;
