@@ -349,12 +349,18 @@
                 </div>
               </div>
 
-              <!-- Fault Diagnostics Drawer (Shows if errors occur) -->
+              <!-- Prominent Fault Incident Breakdown (Explicitly highlights what failed) -->
               <div class="fault-drawer" id="fault-drawer" style="display: none;">
                 <div class="fault-drawer-header">
-                  <span class="fault-icon">⚠️</span>
-                  <strong>Fault Isolation Log (<span id="fault-count">0</span> failures handled safely)</strong>
+                  <div class="fault-badge-wrap">
+                    <span class="fault-alert-icon">⚠️</span>
+                    <strong class="fault-drawer-title">Failed Recipients Breakdown (<span id="fault-count">0</span>)</strong>
+                  </div>
+                  <span class="fault-safety-tag">🛡️ Zero-Drop Protected</span>
                 </div>
+                <p class="fault-drawer-desc">
+                  The following recipient(s) failed during processing. Errors were <strong>safely isolated</strong> without impacting other valid certificates:
+                </p>
                 <div class="fault-list" id="fault-list"></div>
               </div>
 

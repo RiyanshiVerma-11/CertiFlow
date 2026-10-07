@@ -378,14 +378,28 @@ function renderTelemetry(data) {
   document.getElementById("metric-success").textContent = data.successful;
   document.getElementById("metric-failed").textContent = data.failed;
 
-  // Fault drawer
+  // Fault drawer (Prominent Incident Breakdown)
   const faultDrawer = document.getElementById("fault-drawer");
   const faultList = document.getElementById("fault-list");
   if (data.failures && data.failures.length > 0) {
     document.getElementById("fault-count").textContent = data.failures.length;
-    faultList.innerHTML = data.failures.map(f => `
-      <div style="margin-bottom: 6px; padding: 4px 0; border-bottom: 1px dashed rgba(244,63,94,0.2);">
-        <strong>${f.recipient_name}</strong> (${f.recipient_email}): <span style="color:#fb7185;">${f.error}</span>
+    faultList.innerHTML = data.failures.map((f, idx) => `
+      <div class="fault-item-card">
+        <div class="fault-item-top">
+          <div class="fault-item-identity">
+            <span class="fault-item-idx">#${idx + 1}</span>
+            <strong class="fault-item-name">${f.recipient_name}</strong>
+          </div>
+          <span class="fault-item-badge">FAILED & ISOLATED</span>
+        </div>
+        <div class="fault-item-meta">
+          <span class="fault-meta-label">Recipient Email:</span>
+          <span class="fault-meta-email font-mono">${f.recipient_email}</span>
+        </div>
+        <div class="fault-item-reason">
+          <span class="fault-reason-label">Exact Failure Reason:</span>
+          <code class="fault-reason-code">${f.error}</code>
+        </div>
       </div>
     `).join("");
     faultDrawer.style.display = "block";
@@ -415,13 +429,22 @@ async function loadJobCertificates(jobId) {
     grid.innerHTML = certs.map(c => {
       const isSuccess = c.status === "SUCCESS";
       return `
-        <div class="cert-card">
+        <div class="cert-card ${isSuccess ? 'cert-card-success' : 'cert-card-failed'}">
           <div>
-            <div class="cert-code">${c.certificate_code}</div>
+            <div class="cert-card-badges">
+              <span class="cert-code">${c.certificate_code}</span>
+              ${!isSuccess ? `<span class="badge-failed">❌ FAILED</span>` : `<span class="badge-success">✓ ISSUED</span>`}
+            </div>
             <div class="cert-recipient">${c.recipient_name}</div>
-            <div class="cert-email">${c.recipient_email}</div>
+            <div class="cert-email font-mono">${c.recipient_email}</div>
             ${c.custom_note ? `<div class="cert-note">★ ${c.custom_note}</div>` : ''}
-            ${!isSuccess ? `<div style="font-size:0.75rem; color:var(--accent-rose); margin-bottom:10px;">Status: ${c.status} (${c.error_message || 'Failed'})</div>` : ''}
+            ${!isSuccess ? `
+              <div class="cert-failure-callout">
+                <span class="failure-callout-title">Failure Reason:</span>
+                <span class="failure-callout-msg">${c.error_message || 'Simulated fault boundary'}</span>
+                <span class="failure-callout-note">Safely skipped to protect batch execution</span>
+              </div>
+            ` : ''}
           </div>
           <div class="cert-actions">
             ${isSuccess ? `
@@ -432,7 +455,7 @@ async function loadJobCertificates(jobId) {
                 Verify
               </button>
             ` : `
-              <span style="font-size:0.75rem; color:var(--text-dim);">Generation Skipped</span>
+              <span class="cert-failed-label">Excluded From ZIP Archive</span>
             `}
           </div>
         </div>
