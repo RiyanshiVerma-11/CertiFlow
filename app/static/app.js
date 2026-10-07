@@ -33,12 +33,30 @@ let currentJobId = null;
 let pollStartTime = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   initViewRouting();
   initTabs();
   initDemoData();
   initDropzone();
   initEventListeners();
 });
+
+// Theme Management (Light / Dark Toggle)
+function initTheme() {
+  const toggleBtn = document.getElementById("theme-toggle-btn");
+  const savedTheme = localStorage.getItem("certiflow-theme") || "dark";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", nextTheme);
+      localStorage.setItem("certiflow-theme", nextTheme);
+      showNotification(`Switched to ${nextTheme.charAt(0).toUpperCase() + nextTheme.slice(1)} Mode`);
+    });
+  }
+}
 
 // View Navigation & Router (Landing Page vs Dedicated App Workspace)
 function initViewRouting() {
