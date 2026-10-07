@@ -1,0 +1,27 @@
+{
+  "title": "Aereo Cloud Geospatial & Drone Intelligence Specialist",
+  "issuer_name": "Aereo Engineering Academy",
+  "issue_date": "2026-10-07",
+  "recipients": [
+    {
+      "name": "Riyanshi Sharma",
+      "email": "riyanshi@example.com",
+      "custom_note": "Distinction • Top Performer"
+    },
+    {
+      "name": "Alex Morgan",
+      "email": "alex.morgan@enterprise.org",
+      "custom_note": "Grade A"
+    },
+    {
+      "name": "David Chen",
+      "email": "david.chen@drone-tech.io",
+      "custom_note": "Flight Operations Specialist"
+    },
+    {
+      "name": "Sarah Jenkins",
+      "email": "sarah.jenkins@spatial-ai.com",
+      "custom_note": "Survey Engineering"
+    }
+  ]
+}

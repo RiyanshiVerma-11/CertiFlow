@@ -1,0 +1,436 @@
+// CertiFlow Interactive Client Controller
+
+const DEMO_RECIPIENTS = [
+  {
+    "name": "Riyanshi Sharma",
+    "email": "riyanshi@aereo-academy.in",
+    "custom_note": "Rank 1 • Distinguished Flight Lead"
+  },
+  {
+    "name": "Alex Mercer",
+    "email": "alex.mercer@enterprise.org",
+    "custom_note": "Geospatial Analytics Honors"
+  },
+  {
+    "name": "David Chen",
+    "email": "david.chen@drone-tech.io",
+    "custom_note": "LiDAR Processing Specialist"
+  },
+  {
+    "name": "Faulty Recipient (Simulated Error)",
+    "email": "test.__fail__@invalid-domain.com",
+    "custom_note": "Intentionally triggered fault to prove error isolation"
+  },
+  {
+    "name": "Sarah Jenkins",
+    "email": "sarah.jenkins@spatial-ai.com",
+    "custom_note": "Photogrammetry Survey Engineer"
+  }
+];
+
+let pollingInterval = null;
+let currentJobId = null;
+let pollStartTime = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  initTabs();
+  initDemoData();
+  initDropzone();
+  initEventListeners();
+});
+
+function initTabs() {
+  const jsonBtn = document.getElementById("tab-json-btn");
+  const csvBtn = document.getElementById("tab-csv-btn");
+  const jsonTab = document.getElementById("tab-json");
+  const csvTab = document.getElementById("tab-csv");
+
+  jsonBtn.addEventListener("click", () => {
+    jsonBtn.classList.add("active");
+    csvBtn.classList.remove("active");
+    jsonTab.style.display = "block";
+    csvTab.style.display = "none";
+  });
+
+  csvBtn.addEventListener("click", () => {
+    csvBtn.classList.add("active");
+    jsonBtn.classList.remove("active");
+    csvTab.style.display = "block";
+    jsonTab.style.display = "none";
+  });
+}
+
+function initDemoData() {
+  const textarea = document.getElementById("recipients-json");
+  textarea.value = JSON.stringify(DEMO_RECIPIENTS, null, 2);
+  updateRecipientCountBadge(DEMO_RECIPIENTS.length);
+
+  document.getElementById("btn-load-demo").addEventListener("click", () => {
+    textarea.value = JSON.stringify(DEMO_RECIPIENTS, null, 2);
+    updateRecipientCountBadge(DEMO_RECIPIENTS.length);
+    showNotification("Demo batch loaded (5 recipients, including 1 fault test). Click Dispatch to run!");
+  });
+
+  textarea.addEventListener("input", () => {
+    try {
+      const parsed = JSON.parse(textarea.value);
+      if (Array.isArray(parsed)) {
+        updateRecipientCountBadge(parsed.length);
+      }
+    } catch (e) {
+      document.getElementById("recipient-count-badge").textContent = "Invalid JSON";
+    }
+  });
+}
+
+function updateRecipientCountBadge(count) {
+  document.getElementById("recipient-count-badge").textContent = `${count} recipients`;
+}
+
+function initDropzone() {
+  const dropzone = document.getElementById("csv-dropzone");
+  const fileInput = document.getElementById("csv-file-input");
+  const dropText = document.getElementById("dropzone-text");
+
+  dropzone.addEventListener("click", () => fileInput.click());
+
+  dropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = "var(--accent-cyan)";
+  });
+
+  dropzone.addEventListener("dragleave", () => {
+    dropzone.style.borderColor = "var(--border-color)";
+  });
+
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = "var(--border-color)";
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      handleFileSelected(fileInput.files[0]);
+    }
+  });
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length) {
+      handleFileSelected(fileInput.files[0]);
+    }
+  });
+
+  function handleFileSelected(file) {
+    dropText.innerHTML = `
+      <span class="dropzone-icon" style="color: var(--accent-emerald);">📄</span>
+      <p><strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)</p>
+      <span class="dropzone-note" style="color: var(--accent-cyan);">Ready to dispatch</span>
+    `;
+  }
+}
+
+function initEventListeners() {
+  document.getElementById("btn-submit-job").addEventListener("click", handleJsonSubmit);
+  document.getElementById("btn-submit-csv").addEventListener("click", handleCsvSubmit);
+  document.getElementById("btn-refresh-status").addEventListener("click", () => {
+    if (currentJobId) pollJobStatus(currentJobId);
+  });
+  document.getElementById("btn-verify-code").addEventListener("click", handleVerify);
+  document.getElementById("verify-code-input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") handleVerify();
+  });
+}
+
+async function handleJsonSubmit() {
+  const title = document.getElementById("event-title").value.trim();
+  const issuer = document.getElementById("issuer-name").value.trim();
+  const date = document.getElementById("issue-date").value.trim();
+  const rawJson = document.getElementById("recipients-json").value.trim();
+
+  if (!title || !issuer || !date) {
+    alert("Please fill in the title, issuer name, and issue date.");
+    return;
+  }
+
+  let recipients = [];
+  try {
+    recipients = JSON.parse(rawJson);
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      throw new Error("Must be a non-empty array");
+    }
+  } catch (err) {
+    alert("Invalid JSON format for recipients: " + err.message);
+    return;
+  }
+
+  const payload = {
+    title: title,
+    issuer_name: issuer,
+    issue_date: date,
+    recipients: recipients
+  };
+
+  setSubmitting(true);
+  try {
+    const res = await fetch("/api/v1/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || "Job submission failed");
+    }
+
+    const data = await res.json();
+    startJobTracking(data.job_id);
+  } catch (err) {
+    alert("Submission error: " + err.message);
+  } finally {
+    setSubmitting(false);
+  }
+}
+
+async function handleCsvSubmit() {
+  const fileInput = document.getElementById("csv-file-input");
+  if (!fileInput.files.length) {
+    alert("Please select a CSV file first.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+  formData.append("title", document.getElementById("csv-event-title").value.trim());
+  formData.append("issuer_name", document.getElementById("csv-issuer-name").value.trim());
+  formData.append("issue_date", document.getElementById("csv-issue-date").value.trim());
+
+  setSubmitting(true);
+  try {
+    const res = await fetch("/api/v1/jobs/upload-csv", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || "CSV upload failed");
+    }
+
+    const data = await res.json();
+    startJobTracking(data.job_id);
+  } catch (err) {
+    alert("CSV error: " + err.message);
+  } finally {
+    setSubmitting(false);
+  }
+}
+
+function setSubmitting(isSubmitting) {
+  const spinner = document.getElementById("submit-spinner");
+  const btn = document.getElementById("btn-submit-job");
+  if (isSubmitting) {
+    btn.disabled = true;
+    spinner.style.display = "inline-block";
+  } else {
+    btn.disabled = false;
+    spinner.style.display = "none";
+  }
+}
+
+function startJobTracking(jobId) {
+  currentJobId = jobId;
+  pollStartTime = Date.now();
+  if (pollingInterval) clearInterval(pollingInterval);
+
+  document.getElementById("active-job-id").textContent = jobId;
+  document.getElementById("telemetry-actions").style.display = "none";
+  document.getElementById("fault-drawer").style.display = "none";
+  document.getElementById("gallery-section").style.display = "none";
+
+  // Initial poll
+  pollJobStatus(jobId);
+  pollingInterval = setInterval(() => pollJobStatus(jobId), 700);
+}
+
+async function pollJobStatus(jobId) {
+  try {
+    const res = await fetch(`/api/v1/jobs/${jobId}`);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    renderTelemetry(data);
+
+    if (["COMPLETED", "PARTIAL_SUCCESS", "FAILED"].includes(data.status)) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+      loadJobCertificates(jobId);
+    }
+  } catch (e) {
+    console.error("Telemetry polling error", e);
+  }
+}
+
+function renderTelemetry(data) {
+  // Status pill
+  const pill = document.getElementById("job-status-pill");
+  pill.textContent = data.status;
+  pill.className = "status-pill";
+
+  if (data.status === "PENDING" || data.status === "PROCESSING") {
+    pill.classList.add("status-processing");
+  } else if (data.status === "COMPLETED") {
+    pill.classList.add("status-completed");
+  } else if (data.status === "PARTIAL_SUCCESS") {
+    pill.classList.add("status-partial");
+  } else if (data.status === "FAILED") {
+    pill.classList.add("status-failed");
+  }
+
+  // Elapsed time
+  const elapsed = Math.round((Date.now() - pollStartTime) / 1000);
+  document.getElementById("job-elapsed-time").textContent = `${elapsed}s`;
+
+  // Progress Bar
+  document.getElementById("progress-bar-fill").style.width = `${data.progress_percentage}%`;
+  document.getElementById("progress-pct").textContent = `${data.progress_percentage}%`;
+  document.getElementById("progress-counts").textContent = `${data.processed} / ${data.total} Processed`;
+
+  // Metric numbers
+  document.getElementById("metric-total").textContent = data.total;
+  document.getElementById("metric-success").textContent = data.successful;
+  document.getElementById("metric-failed").textContent = data.failed;
+
+  // Fault drawer
+  const faultDrawer = document.getElementById("fault-drawer");
+  const faultList = document.getElementById("fault-list");
+  if (data.failures && data.failures.length > 0) {
+    document.getElementById("fault-count").textContent = data.failures.length;
+    faultList.innerHTML = data.failures.map(f => `
+      <div style="margin-bottom: 6px; padding: 4px 0; border-bottom: 1px dashed rgba(244,63,94,0.2);">
+        <strong>${f.recipient_name}</strong> (${f.recipient_email}): <span style="color:#fb7185;">${f.error}</span>
+      </div>
+    `).join("");
+    faultDrawer.style.display = "block";
+  } else {
+    faultDrawer.style.display = "none";
+  }
+
+  // ZIP download link
+  const actionsWrap = document.getElementById("telemetry-actions");
+  const zipBtn = document.getElementById("btn-download-all-zip");
+  if (data.zip_download_url) {
+    zipBtn.href = data.zip_download_url;
+    actionsWrap.style.display = "flex";
+  }
+}
+
+async function loadJobCertificates(jobId) {
+  try {
+    const res = await fetch(`/api/v1/jobs/${jobId}/certificates`);
+    if (!res.ok) return;
+
+    const certs = await res.json();
+    const gallerySection = document.getElementById("gallery-section");
+    const grid = document.getElementById("certs-grid");
+    document.getElementById("gallery-count").textContent = certs.length;
+
+    grid.innerHTML = certs.map(c => {
+      const isSuccess = c.status === "SUCCESS";
+      return `
+        <div class="cert-card">
+          <div>
+            <div class="cert-code">${c.certificate_code}</div>
+            <div class="cert-recipient">${c.recipient_name}</div>
+            <div class="cert-email">${c.recipient_email}</div>
+            ${c.custom_note ? `<div class="cert-note">★ ${c.custom_note}</div>` : ''}
+            ${!isSuccess ? `<div style="font-size:0.75rem; color:var(--accent-rose); margin-bottom:10px;">Status: ${c.status} (${c.error_message || 'Failed'})</div>` : ''}
+          </div>
+          <div class="cert-actions">
+            ${isSuccess ? `
+              <a href="${c.download_url}" target="_blank" class="cert-btn-dl">
+                View PDF ↗
+              </a>
+              <button onclick="quickVerify('${c.certificate_code}')" class="cert-btn-verify">
+                Verify
+              </button>
+            ` : `
+              <span style="font-size:0.75rem; color:var(--text-dim);">Generation Skipped</span>
+            `}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    gallerySection.style.display = "block";
+  } catch (e) {
+    console.error("Failed to load certificates gallery", e);
+  }
+}
+
+window.quickVerify = function(code) {
+  document.getElementById("verify-code-input").value = code;
+  document.getElementById("verify").scrollIntoView({ behavior: "smooth" });
+  handleVerify();
+};
+
+async function handleVerify() {
+  const code = document.getElementById("verify-code-input").value.trim();
+  const card = document.getElementById("verify-result-card");
+  if (!code) {
+    alert("Please enter a credential code to verify.");
+    return;
+  }
+
+  card.style.display = "block";
+  card.innerHTML = `<p style="color:var(--text-muted);">Verifying credential with CertiFlow registry...</p>`;
+
+  try {
+    const res = await fetch(`/api/v1/certificates/verify/${encodeURIComponent(code)}`);
+    const data = await res.json();
+
+    if (data.is_valid) {
+      card.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.2); color:#34d399; padding:4px 10px; border-radius:999px; font-weight:700; font-size:0.8rem; border:1px solid #059669;">
+            ✓ OFFICIAL CREDENTIAL VERIFIED
+          </span>
+          <span class="font-mono" style="color:var(--accent-cyan); font-weight:600;">${data.certificate_code}</span>
+        </div>
+        <h3 style="font-size:1.2rem; margin-bottom:6px;">${data.recipient_name}</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:8px;">${data.title}</p>
+        <div style="font-size:0.8rem; color:var(--text-dim); display:flex; gap:16px;">
+          <span>Issued By: <strong>${data.issuer_name}</strong></span>
+          <span>Date: <strong>${data.issue_date}</strong></span>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+          <span style="background:rgba(244,63,94,0.2); color:#fb7185; padding:4px 10px; border-radius:999px; font-weight:700; font-size:0.8rem; border:1px solid #e11d48;">
+            ✕ INVALID OR REVOKED CREDENTIAL
+          </span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.85rem;">${data.message}</p>
+      `;
+    }
+  } catch (err) {
+    card.innerHTML = `<p style="color:var(--accent-rose);">Verification network error: ${err.message}</p>`;
+  }
+}
+
+function showNotification(msg) {
+  const notif = document.createElement("div");
+  notif.style.position = "fixed";
+  notif.style.bottom = "24px";
+  notif.style.right = "24px";
+  notif.style.background = "#0b1329";
+  notif.style.border = "1px solid var(--accent-cyan)";
+  notif.style.color = "#fff";
+  notif.style.padding = "12px 20px";
+  notif.style.borderRadius = "8px";
+  notif.style.boxShadow = "0 8px 24px rgba(0,0,0,0.5)";
+  notif.style.zIndex = "999";
+  notif.style.fontSize = "0.9rem";
+  notif.textContent = msg;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 4000);
+}
