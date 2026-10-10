@@ -19,6 +19,7 @@ class Certificate(Base):
     
     recipient_name = Column(String(255), nullable=False)
     recipient_email = Column(String(255), nullable=False, index=True)
+    recipient_id = Column(String(100), nullable=True, index=True)
     custom_note = Column(String(255), nullable=True)
 
     certificate_code = Column(String(64), unique=True, index=True, nullable=False)

@@ -6,21 +6,25 @@
     {
       "name": "Riyanshi Sharma",
       "email": "riyanshi@example.com",
+      "recipient_id": "AEREO-STU-001",
       "custom_note": "Distinction • Top Performer"
     },
     {
       "name": "Alex Morgan",
       "email": "alex.morgan@enterprise.org",
+      "recipient_id": "AEREO-STU-002",
       "custom_note": "Grade A"
     },
     {
       "name": "David Chen",
       "email": "david.chen@drone-tech.io",
+      "recipient_id": "AEREO-STU-003",
       "custom_note": "Flight Operations Specialist"
     },
     {
       "name": "Sarah Jenkins",
       "email": "sarah.jenkins@spatial-ai.com",
+      "recipient_id": "AEREO-STU-004",
       "custom_note": "Survey Engineering"
     }
   ]

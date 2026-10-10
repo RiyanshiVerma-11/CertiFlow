@@ -5,15 +5,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+from sqlalchemy import text
 from app.config import settings
 from app.database import Base, engine
 from app.api.v1.router import api_router
+
+
+from app.services.task_queue import recover_interrupted_jobs
+from app.services.cleanup_service import StorageCleanupService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure tables exist
     Base.metadata.create_all(bind=engine)
+    # Automatically migrate SQLite schema for added columns if DB was pre-existing
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE certificates ADD COLUMN recipient_id VARCHAR(100)"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
+
+    # Crash recovery: scan for interrupted jobs from prior process crash/restart
+    recover_interrupted_jobs()
+
+    # Lifecycle cleanup: enforce TTL on expired temp files
+    StorageCleanupService.run_retention_cleanup()
+
     yield
 
 

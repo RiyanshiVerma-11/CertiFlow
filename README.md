@@ -1,183 +1,113 @@
-# 🎓 CertiFlow — Enterprise Bulk Certificate Engine
+# 🎓 CertiFlow — Bulk Certificate Generator Service
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%2B-red)](https://www.sqlalchemy.org)
-[![Tests](https://img.shields.io/badge/Tests-14%20Passed%20(100%25)-brightgreen)](https://pytest.org)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com)
+[![Tests](https://img.shields.io/badge/Tests-34%20Passed%20(100%25)-brightgreen)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-> **High-performance, fault-tolerant bulk certificate generation & digital verification service built with FastAPI, ReportLab vector rendering, and asynchronous worker thread pools.**  
-> *Developed for the AEREO Software Development Engineer (SDE) Engineering Assessment.*
+> **A backend service for high-volume certificate generation, status tracking, and retrieval built with Python, FastAPI, SQLAlchemy, and ReportLab.**  
+> *Developed for the AEREO Software Development Engineer (SDE) Assessment.*
 
 ---
 
 ## 📑 Table of Contents
-1. [Overview & Product Features](#-overview--product-features)
-2. [Architectural Decisions & Design Trade-offs](#-architectural-decisions--design-trade-offs)
-3. [System Architecture](#-system-architecture)
-4. [Quickstart Guide](#-quickstart-guide)
-5. [Interactive Web Console & Landing Page](#-interactive-web-console--landing-page)
-6. [API Specification & Example Requests](#-api-specification--example-requests)
+1. [Overview & Requirements Coverage](#-overview--requirements-coverage)
+2. [Quickstart Guide](#-quickstart-guide)
+3. [Core Architectural Decisions](#-core-architectural-decisions)
+4. [API Specification & Examples](#-api-specification--examples)
+5. [Validation & Fault Isolation Strategy](#-validation--fault-isolation-strategy)
+6. [Interactive Testing Console](#-interactive-testing-console)
 7. [Automated Testing Suite](#-automated-testing-suite)
-8. [Production Considerations & Future Scope](#-production-considerations--future-scope)
+8. [Optional Production Extensions](#-optional-production-extensions)
 
 ---
 
-## 🚀 Overview & Product Features
+## 🚀 Overview & Requirements Coverage
 
-CertiFlow solves the problem of high-volume certificate synthesis for educational institutions, enterprises, and event organizers. Rather than blocking HTTP client connections or failing an entire batch on a single bad recipient record, CertiFlow is designed for **non-blocking scalability, fault-tolerant degradation, and cryptographic traceability**.
-
-### Key Highlights
-- **⚡ Non-Blocking Bulk Processing:** Accepts large payloads (JSON or CSV) and immediately returns `202 Accepted` with a job tracking ID. Bulk generation executes asynchronously in background thread pools.
-- **🛡️ Zero-Drop Fault Isolation:** Every recipient is processed inside an isolated error boundary. If recipient #4 has an invalid domain or formatting anomaly, recipients #1, #2, #3, and #5 are generated cleanly. The job transitions to `PARTIAL_SUCCESS` and records granular error logs.
-- **📜 300-DPI Vector Certificate Engine:** Uses pure-Python vector graphics (ReportLab + Pillow) with dynamic font scaling, executive gold/slate borders, and embedded QR codes. No external headless browsers or brittle C-binaries required.
-- **📦 Memory-Safe ZIP Compression:** Bundles completed certificates into streamed ZIP archives on-demand without buffering entire archives in RAM.
-- **🔍 Public Authenticity Verification:** Each credential has a unique tracking identifier and QR code verifiable via `GET /api/v1/certificates/verify/{code}`.
-- **🖥️ Professionally Unignorable Web UI:** Includes a dark-mode aerospace landing page and an interactive application console with live progress polling and one-click demo data.
-
----
-
-## 🧠 Architectural Decisions & Design Trade-offs
-
-During technical interviews, engineering decisions must be defended with clear trade-off rationale:
-
-### 1. Asynchronous Background Tasks vs. Synchronous Generation
-- **Decision:** Asynchronous background execution returning immediate `202 Accepted`.
-- **Rationale:** Rendering 50–500 high-resolution PDF certificates takes between 1 and 15 seconds. A synchronous endpoint would block the HTTP connection, causing client socket timeouts (`504 Gateway Timeout`) and starving the ASGI server thread pool.
-- **Alternative Considered:** Synchronous generation was rejected because it violates production REST standards for bulk operations.
-
-### 2. Pure-Python Vector Engine (ReportLab) vs. HTML-to-PDF (wkhtmltopdf/Playwright)
-- **Decision:** ReportLab vector canvas rendering.
-- **Rationale:** Tooling like `wkhtmltopdf` or headless Chromium requires heavy OS-level C-libraries and browser binaries (200MB+ container bloat, fragile cross-platform installation on Windows/Alpine). ReportLab runs 100% in pure Python, starts instantly, executes in <25ms per certificate, and produces crisp vector PDFs with zero external dependencies.
-
-### 3. Database Layer: SQLAlchemy 2.0 with SQLite / PostgreSQL Portability
-- **Decision:** SQLAlchemy 2.0 ORM with SQLite for local development and PostgreSQL compatibility via environment variable `DATABASE_URL`.
-- **Rationale:** Evaluators can clone and run tests with zero database setup. In production, changing one connection string connects directly to an enterprise PostgreSQL instance with connection pooling.
-
-### 4. Granular Error Isolation
-- **Decision:** Per-item `try/catch` inside the worker loop with database state tracking (`PENDING` → `PROCESSING` → `COMPLETED` / `PARTIAL_SUCCESS` / `FAILED`).
-- **Rationale:** Enterprise batches often contain dirty data. Crashing the whole job for one error is unacceptable in production.
-
----
-
-## 🏗️ System Architecture
-
-```
-+-------------------------------------------------------------------------------+
-|                            CLIENT / EVALUATOR UI                              |
-|   Landing Page • Interactive Batch Console • Live Telemetry • QR Verification |
-+-------------------------------------------------------------------------------+
-                                      |
-                         REST / JSON / Multipart HTTP
-                                      v
-+-------------------------------------------------------------------------------+
-|                           FASTAPI ASGI API LAYER                              |
-|   - Pydantic v2 Schema Validation & Sanitization                              |
-|   - CORS & Static Asset Mounting                                              |
-|   - Endpoints: /api/v1/jobs, /api/v1/certificates, /health, /docs             |
-+-------------------------------------------------------------------------------+
-             |                                                 |
-             v                                                 v
-+-----------------------------+              +----------------------------------+
-|      DATABASE LAYER         |              |   ASYNC BACKGROUND WORKER POOL   |
-| - SQLAlchemy 2.0 ORM        |              | - FastAPI BackgroundTasks        |
-| - SQLite (Zero-setup Dev)   |              | - ThreadPool Task Offloading     |
-| - PostgreSQL Ready          |              | - Per-item Error Boundaries      |
-+-----------------------------+              +----------------------------------+
-                                                               |
-                                                               v
-                                             +----------------------------------+
-                                             |       CERTIFICATE ENGINE         |
-                                             | - ReportLab Vector Canvas        |
-                                             | - Dynamic Typography Scaling     |
-                                             | - QR Code & Credential Seal      |
-                                             +----------------------------------+
-                                                               |
-                                                               v
-                                             +----------------------------------+
-                                             |       STORAGE & STREAMING        |
-                                             | - storage/certificates/*.pdf     |
-                                             | - Streamed Chunk ZIP Generator   |
-                                             +----------------------------------+
-```
+This application addresses the problem of bulk certificate generation for events, courses, and training programs:
+- **Bulk Ingestion:** Accepts requests with event details and a list of recipients via JSON (`POST /api/v1/jobs`) or CSV file upload (`POST /api/v1/jobs/upload-csv`).
+- **Asynchronous Execution:** Returns an immediate `202 Accepted` response with a unique `job_id`, delegating certificate generation to background workers so client HTTP connections are never blocked.
+- **Single Vector Template:** Generates 300-DPI vector PDF certificates using pure-Python ReportLab with dynamic font scaling, recipient details, issue dates, and embedded verification QR codes.
+- **Per-Record Fault Isolation:** If an individual recipient contains malformed data (invalid email syntax, missing name) or triggers a rendering error, that specific record is flagged as `FAILED` with diagnostics while valid recipients succeed (`PARTIAL_SUCCESS`). The batch is never aborted.
+- **Progress Tracking & Telemetry:** Clients can poll `GET /api/v1/jobs/{job_id}` to inspect real-time progress percentages, success/failure counts, and granular error details.
+- **Retrieval:** Certificates can be retrieved individually as PDF (`GET /api/v1/certificates/{id}/download`), listed with pagination (`GET /api/v1/jobs/{id}/certificates`), or downloaded as an in-memory streamed ZIP archive (`GET /api/v1/jobs/{id}/download-zip`).
 
 ---
 
 ## 💻 Quickstart Guide
 
-### Option 1: Run Locally (Python 3.11+)
+> **Zero External Dependencies Required:** You do **not** need Redis, Docker, or PostgreSQL to evaluate this application. It runs out of the box using SQLite and standard in-memory background processing.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/certiflow.git
-   cd certiflow
-   ```
-
-2. **Create and activate a virtual environment:**
-   ```bash
-   # Windows
-   python -m venv venv
-   .\venv\Scripts\activate
-
-   # Linux / macOS
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Start the application:**
-   ```bash
-   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-   ```
-
-5. **Open your browser:**
-   - **Interactive Web App & Console:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-   - **Interactive OpenAPI/Swagger Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-   - **Health Check:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-
----
-
-### Option 2: Run with Docker & Docker Compose
-
-CertiFlow is fully containerized:
-
+### 1. Setup & Installation
 ```bash
-docker-compose up --build
+# Clone the repository
+git clone https://github.com/your-username/certiflow.git
+cd certiflow
+
+# Create and activate virtual environment
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux / macOS:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-The service will be accessible immediately at `http://localhost:8000`.
+### 2. Run the Test Suite
+```bash
+python -m pytest -v
+```
+*(All 34 tests execute in ~4.5 seconds with zero external dependencies).*
+
+### 3. Start the Server
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+- **Interactive API Documentation (Swagger):** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Interactive Testing Console:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Health Check:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
 ---
 
-## 🖥️ Interactive Web Console & Landing Page
+## 🧠 Core Architectural Decisions
 
-Evaluators do not need to construct raw cURL commands manually:
-1. Visit `http://localhost:8000/` in any browser.
-2. Click **"⚡ Load Demo Batch (With Fault Test)"** — pre-populates 5 recipients including 1 deliberately triggered fault (`__fail__`).
-3. Click **"Dispatch Bulk Generation Job"**.
-4. Observe the **real-time progress bar**, metric counters (`Total: 5`, `Success: 4`, `Failed: 1`), and fault isolation diagnostics drawer.
-5. Click **"View PDF"** on any card to inspect the 300-DPI vector certificate, or click **"Download All as ZIP"**.
-6. Use the **Verification Portal** to verify authenticity using any certificate code.
+### 1. Asynchronous (`202 Accepted`) vs. Synchronous Processing
+- **Decision:** Asynchronous background processing returning `202 Accepted`.
+- **Reasoning:** Generating 100+ high-resolution PDFs takes several seconds. A synchronous request would block the client connection, risk HTTP 504 timeouts behind reverse proxies, and starve ASGI worker threads. The asynchronous pattern with polling provides responsive UX and adheres to bulk REST conventions.
+
+### 2. Pure-Python Vector Engine (ReportLab) vs. Headless Browsers
+- **Decision:** ReportLab vector canvas rendering.
+- **Reasoning:** Headless browsers (Puppeteer, Playwright, wkhtmltopdf) introduce 200MB+ container dependencies, native C-library compilation issues, and significant memory overhead (~100MB per browser instance). ReportLab runs pure Python, executes in <25ms per certificate, and generates crisp 300-DPI vector PDFs without external binaries.
+
+### 3. Database Layer: SQLAlchemy 2.0 with SQLite / PostgreSQL Portability
+- **Decision:** SQLAlchemy 2.0 ORM configured for SQLite by default, configurable to PostgreSQL via `DATABASE_URL`.
+- **Reasoning:** Enables zero-setup local evaluation without needing a running database server, while remaining production-ready for connection-pooled PostgreSQL deployments.
+
+### 4. Per-Record Fault Isolation Boundary
+- **Decision:** Ingest-time schema checks and per-item `try/catch` execution blocks.
+- **Reasoning:** Enterprise bulk uploads regularly include bad records (e.g., misspelled emails, empty names). Failing an entire 500-recipient batch because row 47 is corrupt is unacceptable. CertiFlow isolates failures per record and records detailed diagnostics in `job.failures`.
+
+### 5. In-Memory Streaming ZIP vs. Disk Buffering
+- **Decision:** Streamed in-memory ZIP generation via `io.BytesIO` and `StreamingResponse`.
+- **Reasoning:** Storing pre-zipped archives on disk creates redundant storage bloat. Generating ZIP streams on-demand saves disk space and eliminates stale file cleanup issues.
 
 ---
 
-## 📡 API Specification & Example Requests
+## 📡 API Specification & Examples
 
 ### 1. Submit Bulk Job (JSON)
-- **Endpoint:** `POST /api/v1/jobs`
-- **Status:** `202 Accepted`
+- **POST** `/api/v1/jobs` (`202 Accepted`)
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/jobs" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Aereo Cloud Geospatial Intelligence Specialist",
-    "issuer_name": "Aereo Engineering Academy",
+    "title": "Drone Photogrammetry Specialist",
+    "issuer_name": "Aereo Academy",
     "issue_date": "2026-10-07",
     "recipients": [
       {
@@ -193,13 +123,13 @@ curl -X POST "http://localhost:8000/api/v1/jobs" \
   }'
 ```
 
-**Response (`202 Accepted`):**
+**Response:**
 ```json
 {
   "job_id": "3c829e0a-bf41-4773-8bc6-37ff4d3b84f3",
   "status": "PENDING",
   "total_recipients": 2,
-  "message": "Bulk certificate generation job accepted and scheduled for background processing.",
+  "message": "Bulk certificate generation job accepted (FastAPI BackgroundTasks).",
   "status_url": "/api/v1/jobs/3c829e0a-bf41-4773-8bc6-37ff4d3b84f3"
 }
 ```
@@ -207,13 +137,12 @@ curl -X POST "http://localhost:8000/api/v1/jobs" \
 ---
 
 ### 2. Submit Bulk Job via CSV Upload
-- **Endpoint:** `POST /api/v1/jobs/upload-csv`
-- **Status:** `202 Accepted`
+- **POST** `/api/v1/jobs/upload-csv` (`202 Accepted`)
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/jobs/upload-csv" \
   -F "file=@data/sample_recipients.csv" \
-  -F "title=Drone Photogrammetry Engineer" \
+  -F "title=Drone Photogrammetry Specialist" \
   -F "issuer_name=Aereo Academy" \
   -F "issue_date=2026-10-07"
 ```
@@ -221,8 +150,7 @@ curl -X POST "http://localhost:8000/api/v1/jobs/upload-csv" \
 ---
 
 ### 3. Check Job Status & Progress Telemetry
-- **Endpoint:** `GET /api/v1/jobs/{job_id}`
-- **Status:** `200 OK`
+- **GET** `/api/v1/jobs/{job_id}` (`200 OK`)
 
 ```bash
 curl "http://localhost:8000/api/v1/jobs/3c829e0a-bf41-4773-8bc6-37ff4d3b84f3"
@@ -232,8 +160,8 @@ curl "http://localhost:8000/api/v1/jobs/3c829e0a-bf41-4773-8bc6-37ff4d3b84f3"
 ```json
 {
   "job_id": "3c829e0a-bf41-4773-8bc6-37ff4d3b84f3",
-  "title": "Aereo Cloud Geospatial Intelligence Specialist",
-  "issuer_name": "Aereo Engineering Academy",
+  "title": "Drone Photogrammetry Specialist",
+  "issuer_name": "Aereo Academy",
   "issue_date": "2026-10-07",
   "status": "COMPLETED",
   "progress_percentage": 100.0,
@@ -251,99 +179,94 @@ curl "http://localhost:8000/api/v1/jobs/3c829e0a-bf41-4773-8bc6-37ff4d3b84f3"
 
 ---
 
-### 4. List Generated Certificates
-- **Endpoint:** `GET /api/v1/jobs/{job_id}/certificates`
+### 4. Retrieve Individual Certificate PDF
+- **GET** `/api/v1/certificates/{id}/download?disposition=inline|attachment`
 
 ```bash
-curl "http://localhost:8000/api/v1/jobs/3c829e0a-bf41-4773-8bc6-37ff4d3b84f3/certificates"
+# View inline in browser tab:
+curl "http://localhost:8000/api/v1/certificates/<CERT_ID>/download?disposition=inline"
+
+# Download as file attachment:
+curl -O -J "http://localhost:8000/api/v1/certificates/<CERT_ID>/download"
 ```
 
 ---
 
-### 5. Download Single Certificate PDF
-- **Endpoint:** `GET /api/v1/certificates/{certificate_id}/download`
+### 5. Download All Certificates as ZIP
+- **GET** `/api/v1/jobs/{job_id}/download-zip`
 
 ```bash
-curl -O -J "http://localhost:8000/api/v1/certificates/CERT_UUID/download"
+curl -O -J "http://localhost:8000/api/v1/jobs/<JOB_ID>/download-zip"
 ```
 
 ---
 
-### 6. Download All Certificates as ZIP
-- **Endpoint:** `GET /api/v1/jobs/{job_id}/download-zip`
-
-```bash
-curl -O -J "http://localhost:8000/api/v1/jobs/3c829e0a-bf41-4773-8bc6-37ff4d3b84f3/download-zip"
-```
-
----
-
-### 7. Verify Certificate Authenticity
-- **Endpoint:** `GET /api/v1/certificates/verify/{certificate_code}`
+### 6. Verify Certificate Authenticity
+- **GET** `/api/v1/certificates/verify/{certificate_code}`
 
 ```bash
 curl "http://localhost:8000/api/v1/certificates/verify/CERT-A1B2C3D4"
 ```
 
-**Response:**
-```json
-{
-  "is_valid": true,
-  "certificate_code": "CERT-A1B2C3D4",
-  "recipient_name": "Riyanshi Sharma",
-  "title": "Aereo Cloud Geospatial Intelligence Specialist",
-  "issuer_name": "Aereo Engineering Academy",
-  "issue_date": "2026-10-07",
-  "custom_note": "Distinction • Rank 1",
-  "issued_at": "2026-10-07T14:00:01Z",
-  "status": "VERIFIED_VALID",
-  "message": "Official verified credential authenticated in CertiFlow registry."
-}
-```
+---
+
+## 🛡️ Validation & Fault Isolation Strategy
+
+1. **Pre-Ingestion Validation:** Email syntax and name requirements are validated per recipient. Malformed records are tagged as `FAILED` with explicit error descriptions (`"Validation Error: Invalid email address format"`) without halting the rest of the batch.
+2. **Runtime Generation Isolation:** During PDF canvas rendering, each item executes inside an isolated `try/except` boundary. Any unexpected exception (e.g., rendering error, character encoding issue) transitions only that specific certificate to `FAILED`, allowing other certificates to complete.
+3. **Transparent Reporting:** The final job status accurately reflects outcomes:
+   - `COMPLETED`: All recipients succeeded.
+   - `PARTIAL_SUCCESS`: Some recipients succeeded, failures isolated with diagnostic logs.
+   - `FAILED`: No valid recipients could be processed.
+
+---
+
+## 🖥️ Interactive Testing Console
+
+For quick visual testing, an interactive console is available at `http://localhost:8000/`:
+- **Load Demo Batch:** Pre-populates a sample batch including a malformed record to demonstrate fault isolation.
+- **Progress Tracking:** Live polling with progress bar and success/failure counters.
+- **PDF Inspection:** Direct links to view generated vector PDFs in a browser tab or download as ZIP.
+- **Verification Portal:** Look up any certificate code to verify its authenticity and metadata.
 
 ---
 
 ## 🧪 Automated Testing Suite
 
-CertiFlow includes a complete `pytest` test suite covering 100% of the rubric requirements:
+The test suite covers all requirements outlined in the assessment rubric:
 
 ```bash
 python -m pytest -v
 ```
 
-### Test Suite Execution Results:
-| Test File | Test Case | Target Covered | Status |
-| :--- | :--- | :--- | :--- |
-| `test_jobs.py` | `test_create_bulk_job_success` | Job creation & 202 response | ✅ **PASSED** |
-| `test_jobs.py` | `test_job_processing_lifecycle` | Async lifecycle & status | ✅ **PASSED** |
-| `test_jobs.py` | `test_get_non_existent_job_returns_404` | 404 error handling | ✅ **PASSED** |
-| `test_jobs.py` | `test_csv_upload_job_success` | Multipart CSV processing | ✅ **PASSED** |
-| `test_validation.py` | `test_validation_empty_recipient_list` | Empty payload rejection | ✅ **PASSED** |
-| `test_validation.py` | `test_validation_invalid_email` | Malformed email validation | ✅ **PASSED** |
-| `test_validation.py` | `test_validation_whitespace_name` | Sanitization of blank names | ✅ **PASSED** |
-| `test_validation.py` | `test_validation_missing_title` | Missing required fields | ✅ **PASSED** |
-| `test_validation.py` | `test_validation_non_csv_upload` | File extension safety | ✅ **PASSED** |
-| `test_validation.py` | `test_validation_csv_missing_email_column` | Corrupt CSV headers | ✅ **PASSED** |
-| `test_generator.py` | `test_certificate_pdf_generation_integrity` | Vector PDF header validation | ✅ **PASSED** |
-| `test_generator.py` | `test_certificate_generator_handles_extreme_names` | Dynamic typography scaling | ✅ **PASSED** |
-| `test_fault_isolation.py` | `test_individual_recipient_failure_does_not_abort_batch` | Zero-drop fault isolation | ✅ **PASSED** |
-| `test_retrieval.py` | `test_certificate_download_and_bulk_zip` | PDF stream & ZIP integrity | ✅ **PASSED** |
-
-**Total:** `14 passed in 0.86s` (0 warnings, 0 failures).
+### Test Coverage Breakdown (34 Tests / 100% Passing):
+| Test File | Focus Area | Status |
+| :--- | :--- | :--- |
+| `tests/test_jobs.py` | Job submission (JSON & CSV), 202 Accepted, status polling | ✅ **PASSED** |
+| `tests/test_validation.py` | Empty batches, missing titles, invalid file types, CSV headers | ✅ **PASSED** |
+| `tests/test_generator.py` | ReportLab vector PDF integrity, dynamic text scaling | ✅ **PASSED** |
+| `tests/test_fault_isolation.py` | Per-record dirty data isolation, runtime crash boundaries | ✅ **PASSED** |
+| `tests/test_retrieval.py` | Individual PDF downloads, streamed in-memory ZIP archive | ✅ **PASSED** |
+| `tests/test_pagination.py` | Limit/offset pagination and status filtering on certificate list | ✅ **PASSED** |
+| `tests/test_lifecycle_cleanup.py` | Storage retention garbage collection, streaming memory safety | ✅ **PASSED** |
+| `tests/test_storage_abstraction.py` | Local and cloud storage provider contracts | ✅ **PASSED** |
+| `tests/test_task_queue_and_recovery.py` | Worker queue abstraction, container crash recovery | ✅ **PASSED** |
+| `tests/test_rate_limiter.py` | Sliding window rate limiting logic and brute force protection | ✅ **PASSED** |
+| `tests/test_email_dispatch.py` | Asynchronous email dispatch with PDF attachment | ✅ **PASSED** |
 
 ---
 
-## 🔮 Production Considerations & Future Scope
+## 🔌 Optional Production Extensions
 
-In an enterprise environment like **Aereo Cloud**:
-1. **Distributed Celery / Redis Workers:** While FastAPI `BackgroundTasks` is ideal for single-instance setups, horizontal scaling across multiple Kubernetes pods can be achieved by swapping `job_service.py` with Celery + Redis message brokers.
-2. **Cloud Object Storage (S3 / GCS):** Replace local disk storage with Amazon S3 or Google Cloud Storage using presigned URLs for direct client downloads.
-3. **Automated Dispatch / Email Delivery:** Integrate with AWS SES or SendGrid to email certificates directly to participants upon job completion.
-4. **Custom Vector SVG / HTML Canvas Templates:** Enable organizations to upload their own SVG certificate templates with dynamic coordinate anchors.
+The codebase is structured to scale cleanly for production deployments:
+1. **Docker Compose (`docker-compose.yml`):** Multi-service orchestration including FastAPI API gateway, dedicated Redis worker (`app.worker`), Redis 7, and PostgreSQL 16.
+2. **Decoupled Task Queue:** Set `TASK_QUEUE_BACKEND="redis"` to offload jobs to an external Redis queue.
+3. **Cloud Storage Provider:** Set `STORAGE_BACKEND="s3"` to store certificates in AWS S3 or MinIO.
+4. **Automated Email Delivery:** Set `EMAIL_DISPATCH_ENABLED=true` to automatically deliver certificates via SMTP or AWS SES upon job completion.
 
 ---
 
-## 👤 Author & Submission Details
-- **Role:** Intern — Software Development Engineer (AEREO Bengaluru)
-- **Built by:** Riyanshi Sharma
-- **Repository:** Ready for GitHub push.
+## 👤 Submission Details
+- **Role:** Software Development Engineer (SDE) Assessment
+- **Company:** AEREO (Bangalore)
+- **Candidate:** Riyanshi Sharma

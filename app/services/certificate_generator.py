@@ -6,6 +6,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
 from app.config import settings
+from app.services.storage_service import get_storage_provider
 
 
 class CertificateGenerator:
@@ -23,6 +24,33 @@ class CertificateGenerator:
     COLOR_BORDER = colors.HexColor("#cbd5e1")       # Slate 300
 
     @classmethod
+    def generate_pdf_bytes(
+        cls,
+        recipient_name: str,
+        event_title: str,
+        issuer_name: str,
+        issue_date: str,
+        certificate_code: str,
+        recipient_id: Optional[str] = None,
+        custom_note: Optional[str] = None,
+    ) -> bytes:
+        """
+        Renders a certificate directly into an in-memory byte stream without disk I/O.
+        """
+        buf = io.BytesIO()
+        cls._render_canvas(
+            buf,
+            recipient_name=recipient_name,
+            event_title=event_title,
+            issuer_name=issuer_name,
+            issue_date=issue_date,
+            certificate_code=certificate_code,
+            recipient_id=recipient_id,
+            custom_note=custom_note,
+        )
+        return buf.getvalue()
+
+    @classmethod
     def generate_pdf(
         cls,
         recipient_name: str,
@@ -30,19 +58,58 @@ class CertificateGenerator:
         issuer_name: str,
         issue_date: str,
         certificate_code: str,
+        recipient_id: Optional[str] = None,
         custom_note: Optional[str] = None,
         output_path: Optional[Path] = None,
     ) -> Path:
         """
         Renders a high-resolution, vector-sharp PDF certificate.
+        Persists using the configured StorageProvider abstraction or output_path.
         Returns the Path to the generated PDF.
         """
-        if output_path is None:
-            output_path = settings.STORAGE_DIR / f"{certificate_code}.pdf"
+        storage = get_storage_provider()
 
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if output_path is not None:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            cls._render_canvas(
+                str(output_path),
+                recipient_name=recipient_name,
+                event_title=event_title,
+                issuer_name=issuer_name,
+                issue_date=issue_date,
+                certificate_code=certificate_code,
+                recipient_id=recipient_id,
+                custom_note=custom_note,
+            )
+            return output_path
 
-        c = canvas.Canvas(str(output_path), pagesize=landscape(A4))
+        # Generate in memory and persist via StorageProvider
+        pdf_bytes = cls.generate_pdf_bytes(
+            recipient_name=recipient_name,
+            event_title=event_title,
+            issuer_name=issuer_name,
+            issue_date=issue_date,
+            certificate_code=certificate_code,
+            recipient_id=recipient_id,
+            custom_note=custom_note,
+        )
+        storage_key = storage.save_certificate(certificate_code, pdf_bytes)
+        local_path = storage.get_local_path(storage_key)
+        return local_path if local_path is not None else Path(storage_key)
+
+    @classmethod
+    def _render_canvas(
+        cls,
+        target,
+        recipient_name: str,
+        event_title: str,
+        issuer_name: str,
+        issue_date: str,
+        certificate_code: str,
+        recipient_id: Optional[str] = None,
+        custom_note: Optional[str] = None,
+    ):
+        c = canvas.Canvas(target, pagesize=landscape(A4))
         width, height = cls.PAGE_WIDTH, cls.PAGE_HEIGHT
 
         # 1. Background Fill
@@ -79,15 +146,15 @@ class CertificateGenerator:
         # 5. Top Header Banner & Seal
         c.setFillColor(cls.COLOR_GOLD)
         c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(width / 2, height - 65, "OFFICIAL CREDENTIAL • VERIFIED RECORD")
+        c.drawCentredString(width / 2, 532, "OFFICIAL CREDENTIAL • VERIFIED RECORD")
 
         c.setFillColor(cls.COLOR_PRIMARY)
         c.setFont("Helvetica-Bold", 28)
-        c.drawCentredString(width / 2, height - 102, "CERTIFICATE OF ACHIEVEMENT")
+        c.drawCentredString(width / 2, 492, "CERTIFICATE OF ACHIEVEMENT")
 
         c.setFillColor(cls.COLOR_MUTED)
         c.setFont("Helvetica", 12)
-        c.drawCentredString(width / 2, height - 132, "THIS CERTIFICATE IS PROUDLY PRESENTED TO")
+        c.drawCentredString(width / 2, 454, "THIS CERTIFICATE IS PROUDLY PRESENTED TO")
 
         # 6. Recipient Name (Dynamic font scaling for long names)
         name_font_size = 32
@@ -98,76 +165,87 @@ class CertificateGenerator:
 
         c.setFillColor(cls.COLOR_PRIMARY)
         c.setFont("Helvetica-Bold", name_font_size)
-        c.drawCentredString(width / 2, height - 195, recipient_name)
+        c.drawCentredString(width / 2, 388, recipient_name)
 
         # Name Underline flourish
         name_width = min(max(len(recipient_name) * 14, 200), width - 200)
         c.setStrokeColor(cls.COLOR_GOLD)
         c.setLineWidth(2)
-        c.line((width - name_width) / 2, height - 208, (width + name_width) / 2, height - 208)
+        c.line((width - name_width) / 2, 374, (width + name_width) / 2, 374)
 
         # 7. Context / Reason Description
         c.setFillColor(cls.COLOR_SECONDARY)
         c.setFont("Helvetica", 13)
         c.drawCentredString(
             width / 2,
-            height - 245,
+            322,
             "for successfully completing the curriculum and demonstrating proficiency in",
         )
 
         # 8. Event / Course Title
         c.setFillColor(cls.COLOR_ACCENT)
         c.setFont("Helvetica-Bold", 19)
-        c.drawCentredString(width / 2, height - 280, event_title)
+        title_y = 280 if custom_note else 268
+        c.drawCentredString(width / 2, title_y, event_title)
 
-        # Optional Custom Note (e.g. distinction, honor)
+        # 9. Optional Custom Note / Honors Distinction Badge
         if custom_note:
-            c.setFillColor(cls.COLOR_GOLD)
+            pill_text = f"★  {custom_note}  ★"
             c.setFont("Helvetica-Bold", 11)
-            c.drawCentredString(width / 2, height - 310, f"★  {custom_note}  ★")
+            text_w = c.stringWidth(pill_text, "Helvetica-Bold", 11)
+            pill_w = text_w + 32
+            pill_h = 24
+            pill_x = (width - pill_w) / 2
+            pill_y = 230
+            # Executive gold-tinted honors badge
+            c.setFillColor(cls.COLOR_GOLD_LIGHT)
+            c.setStrokeColor(cls.COLOR_GOLD)
+            c.setLineWidth(1)
+            c.roundRect(pill_x, pill_y, pill_w, pill_h, 6, fill=1, stroke=1)
+            c.setFillColor(colors.HexColor("#b45309"))
+            c.drawCentredString(width / 2, pill_y + 7, pill_text)
 
-        # 9. Divider Line
+        # 10. Divider Line
         c.setStrokeColor(cls.COLOR_BORDER)
         c.setLineWidth(0.8)
-        c.line(80, height - 335, width - 80, height - 335)
+        c.line(80, 196, width - 80, 196)
 
-        # 10. QR Code Generation for Instant Verification
+        # 11. QR Code Generation for Instant Verification
         qr_reader = cls._generate_qr_code(certificate_code)
-        # Draw QR code at bottom-left
-        c.drawImage(qr_reader, 70, 60, width=80, height=80)
+        c.drawImage(qr_reader, 75, 82, width=78, height=78)
         c.setFillColor(cls.COLOR_MUTED)
         c.setFont("Helvetica", 8)
-        c.drawString(70, 48, "Scan to Verify Authenticity")
+        c.drawString(75, 68, "Scan to Verify Authenticity")
 
-        # 11. Center Metadata Block
+        # 12. Center Metadata Block
         c.setFillColor(cls.COLOR_PRIMARY)
         c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(width / 2, 115, "CREDENTIAL IDENTIFIER")
+        c.drawCentredString(width / 2, 146, "CREDENTIAL IDENTIFIER")
         c.setFillColor(cls.COLOR_ACCENT)
         c.setFont("Courier-Bold", 11)
-        c.drawCentredString(width / 2, 98, certificate_code)
+        cred_text = certificate_code if not recipient_id else f"{certificate_code}  •  ID: {recipient_id}"
+        c.drawCentredString(width / 2, 128, cred_text)
 
         c.setFillColor(cls.COLOR_MUTED)
         c.setFont("Helvetica", 9)
-        c.drawCentredString(width / 2, 78, f"Issued Date: {issue_date}")
-        c.drawCentredString(width / 2, 62, "Digitally signed and archived in the CertiFlow registry")
+        c.drawCentredString(width / 2, 108, f"Issued Date: {issue_date}")
+        c.drawCentredString(width / 2, 92, "Digitally signed and archived in the CertiFlow registry")
 
-        # 12. Signature & Issuer Block (Bottom-Right)
+        # 13. Signature & Issuer Block (Bottom-Right)
         c.setStrokeColor(cls.COLOR_PRIMARY)
         c.setLineWidth(1)
-        c.line(width - 240, 95, width - 70, 95)
+        c.line(width - 240, 125, width - 70, 125)
 
         c.setFillColor(cls.COLOR_PRIMARY)
         c.setFont("Helvetica-Bold", 11)
-        c.drawCentredString(width - 155, 78, issuer_name)
+        c.drawCentredString(width - 155, 108, issuer_name)
 
         c.setFillColor(cls.COLOR_MUTED)
         c.setFont("Helvetica", 9)
-        c.drawCentredString(width - 155, 62, "Authorized Signatory")
+        c.drawCentredString(width - 155, 92, "Authorized Signatory")
 
         c.showPage()
         c.save()
-        return output_path
 
     @staticmethod
     def _generate_qr_code(certificate_code: str):
@@ -184,6 +262,9 @@ class CertificateGenerator:
         qr.make(fit=True)
         img = qr.make_image(fill_color="#0f172a", back_color="white")
         buf = io.BytesIO()
-        img.save(buf, format="PNG")
+        if hasattr(img, "_img"):
+            img._img.save(buf, format="PNG")
+        else:
+            img.save(buf)
         buf.seek(0)
         return ImageReader(buf)

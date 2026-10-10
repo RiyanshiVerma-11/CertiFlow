@@ -1,6 +1,9 @@
 version: "3.8"
 
 services:
+  # ---------------------------------------------------------------------------
+  # 1. CertiFlow FastAPI Web Gateway & Ingestion API
+  # ---------------------------------------------------------------------------
   certiflow:
     build: .
     container_name: certiflow-api
@@ -9,10 +12,87 @@ services:
     volumes:
       - ./storage:/app/storage
     environment:
-      - DATABASE_URL=sqlite:////app/certiflow.db
+      - DATABASE_URL=postgresql://certiflow_admin:certiflow_secret@postgres:5432/certiflow_db
+      - REDIS_URL=redis://redis:6379/0
+      - TASK_QUEUE_BACKEND=redis
+      - STORAGE_BACKEND=local
+      - STORAGE_LOCAL_ROOT=/app/storage
+      - API_KEY_ENABLED=false
+      - SMTP_ENABLED=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # 2. CertiFlow Asynchronous Distributed Queue Worker (Celery/Redis Architecture)
+  # ---------------------------------------------------------------------------
+  worker:
+    build: .
+    container_name: certiflow-worker
+    command: ["python", "-m", "app.worker"]
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - DATABASE_URL=postgresql://certiflow_admin:certiflow_secret@postgres:5432/certiflow_db
+      - REDIS_URL=redis://redis:6379/0
+      - TASK_QUEUE_BACKEND=redis
+      - STORAGE_BACKEND=local
+      - STORAGE_LOCAL_ROOT=/app/storage
+      - SMTP_ENABLED=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # 3. Redis 7 Distributed Message Queue & Cache
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: certiflow-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # 4. PostgreSQL 16 Enterprise Relational Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: certiflow-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=certiflow_admin
+      - POSTGRES_PASSWORD=certiflow_secret
+      - POSTGRES_DB=certiflow_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certiflow_admin -d certiflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

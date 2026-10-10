@@ -19,6 +19,40 @@ class Settings(BaseSettings):
     # Generator settings
     MAX_BATCH_SIZE: int = 1000
     DEFAULT_ISSUER: str = "Aereo Engineering Academy"
+    BATCH_COMMIT_SIZE: int = 20
+
+    # Task queue configuration ('background' or 'celery')
+    TASK_QUEUE_BACKEND: str = "background"
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # Storage abstraction settings ('local' or 's3')
+    STORAGE_BACKEND: str = "local"
+    S3_BUCKET_NAME: str = "certiflow-storage"
+    S3_REGION_NAME: str = "ap-south-1"
+    S3_ENDPOINT_URL: str = ""
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    STORAGE_RETENTION_HOURS: int = 48
+
+    # Rate limiting & security (Generous default for local evaluation & automated testing)
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_REQUESTS: int = 1000
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+    API_KEY: str = ""  # If left empty, API is open for local evaluation mode
+
+    # Pagination settings
+    DEFAULT_PAGE_SIZE: int = 50
+    MAX_PAGE_SIZE: int = 500
+    CLEANUP_INTERVAL_MINUTES: int = 60
+
+    # Automated email dispatch settings (SMTP / AWS SES)
+    EMAIL_DISPATCH_ENABLED: bool = False
+    EMAIL_PROVIDER: str = "smtp"  # 'smtp', 'ses', or 'mock'
+    SMTP_HOST: str = "smtp.mailgun.org"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "certificates@aereo.io"
 
     model_config = SettingsConfigDict(
         env_file=".env",

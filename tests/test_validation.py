@@ -9,7 +9,7 @@ def test_validation_empty_recipient_list(client):
     assert response.status_code == 422
 
 
-def test_validation_invalid_email(client):
+def test_validation_invalid_email_isolated_in_job(client):
     payload = {
         "title": "Aereo Cloud Course",
         "issuer_name": "Aereo Academy",
@@ -19,12 +19,17 @@ def test_validation_invalid_email(client):
         ],
     }
     response = client.post("/api/v1/jobs", json=payload)
-    assert response.status_code == 422
-    errors = response.json()["detail"]
-    assert any("email" in str(e).lower() for e in errors)
+    # Zero-drop fault isolation: request is accepted and error is isolated per-record
+    assert response.status_code == 202
+    job_id = response.json()["job_id"]
+    status_resp = client.get(f"/api/v1/jobs/{job_id}")
+    assert status_resp.status_code == 200
+    data = status_resp.json()
+    assert data["failed"] == 1
+    assert any("email" in f["error"].lower() for f in data["failures"])
 
 
-def test_validation_whitespace_name(client):
+def test_validation_whitespace_name_isolated_in_job(client):
     payload = {
         "title": "Aereo Cloud Course",
         "issuer_name": "Aereo Academy",
@@ -34,7 +39,14 @@ def test_validation_whitespace_name(client):
         ],
     }
     response = client.post("/api/v1/jobs", json=payload)
-    assert response.status_code == 422
+    # Zero-drop fault isolation: request is accepted and error is isolated per-record
+    assert response.status_code == 202
+    job_id = response.json()["job_id"]
+    status_resp = client.get(f"/api/v1/jobs/{job_id}")
+    assert status_resp.status_code == 200
+    data = status_resp.json()
+    assert data["failed"] == 1
+    assert any("name cannot be empty" in f["error"].lower() for f in data["failures"])
 
 
 def test_validation_missing_title(client):

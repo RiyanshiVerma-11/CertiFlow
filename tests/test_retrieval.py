@@ -22,7 +22,10 @@ def test_certificate_download_and_bulk_zip(client):
     # 2. Retrieve list of certificates
     certs_resp = client.get(f"/api/v1/jobs/{job_id}/certificates")
     assert certs_resp.status_code == 200
-    certs = certs_resp.json()
+    certs_data = certs_resp.json()
+    assert "items" in certs_data
+    assert certs_data["total"] == 2
+    certs = certs_data["items"]
     assert len(certs) == 2
 
     first_cert = certs[0]

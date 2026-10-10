@@ -1,6 +1,6 @@
-name,email,custom_note
-Riyanshi Sharma,riyanshi@example.com,Rank 1 • Distinction
-Alex Morgan,alex.morgan@enterprise.org,Grade A+
-David Chen,david.chen@drone-tech.io,Flight Operations Specialist
-Sarah Jenkins,sarah.jenkins@spatial-ai.com,Survey Engineer
-Priya Nair,priya.nair@aereo-academy.in,Geospatial Analytics Lead
+name,email,recipient_id,custom_note
+Riyanshi Sharma,riyanshi@example.com,AEREO-STU-001,Rank 1 • Distinction
+Alex Morgan,alex.morgan@enterprise.org,AEREO-STU-002,Grade A+
+David Chen,david.chen@drone-tech.io,AEREO-STU-003,Flight Operations Specialist
+Sarah Jenkins,sarah.jenkins@spatial-ai.com,AEREO-STU-004,Survey Engineer
+Priya Nair,priya.nair@aereo-academy.in,AEREO-STU-005,Geospatial Analytics Lead

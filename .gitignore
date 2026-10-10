@@ -38,6 +38,8 @@ venv.bak/
 # SQLite Database
 *.db
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Storage / Output directories (keep structure via .gitkeep if needed)
 storage/certificates/*

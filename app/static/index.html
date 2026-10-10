@@ -1,23 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CertiFlow — Enterprise Bulk Certificate Generation Engine</title>
-  <meta name="description" content="High-performance bulk certificate generation and verification platform with async background workers and fault-isolated rendering.">
+  <title>CertiFlow — Enterprise Bulk Certificate Generation Engine | AEREO</title>
+  <meta name="description" content="High-performance bulk certificate synthesis and digital verification platform with async workers and fault-isolated rendering. Built for AEREO.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=3.0.0">
 </head>
 <body>
 
-  <!-- Universal Top Navbar -->
+  <!-- ======================================================== -->
+  <!-- UNIVERSAL TOP NAVBAR                                     -->
+  <!-- ======================================================== -->
   <header class="navbar">
     <div class="nav-container">
-      <div class="brand" id="nav-brand" style="cursor: pointer;">
+      <div class="brand" id="nav-brand" style="cursor: pointer;" title="CertiFlow Platform">
         <div class="brand-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
@@ -26,12 +28,14 @@
           <span class="brand-tag">AEREO SDE Task</span>
         </div>
       </div>
+
       <nav class="nav-links">
         <a href="#home" class="nav-link" id="nav-home-link">Product Overview</a>
         <a href="#features" class="nav-link" id="nav-arch-link">Architecture</a>
         <a href="#verify" class="nav-link" id="nav-verify-link">Verification</a>
         <a href="/docs" target="_blank" class="nav-link nav-link-muted">Swagger API ↗</a>
-        <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Light/Dark Theme">
+        
+        <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Light / Dark Theme" aria-label="Toggle Light / Dark Theme">
           <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -47,6 +51,7 @@
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
+
         <button class="btn btn-primary btn-sm" id="nav-launch-btn">
           Launch App Console →
         </button>
@@ -60,7 +65,7 @@
   <main id="view-landing" class="view-active">
     
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section class="hero-section" id="home">
       <div class="hero-glow"></div>
       <div class="container hero-content">
         <div class="hero-badge">
@@ -72,7 +77,7 @@
           <span class="text-gradient">Engineered for Scale.</span>
         </h1>
         <p class="hero-subtitle">
-          An asynchronous, fault-isolated document synthesis platform. Accepts hundreds of recipients, dispatches background thread pools, renders 300-DPI vector credentials with cryptographic QR seals, and streams bulk ZIP archives.
+          An asynchronous, fault-isolated document synthesis platform. Accepts bulk recipient cohorts, dispatches non-blocking workers, renders 300-DPI vector credentials with cryptographic QR seals, and streams memory-safe ZIP archives.
         </p>
 
         <div class="hero-actions">
@@ -88,7 +93,7 @@
           </a>
         </div>
 
-        <!-- Live Telemetry Pill Banner -->
+        <!-- Clean Architecture Summary Strip -->
         <div class="telemetry-bar">
           <div class="telemetry-item">
             <span class="telemetry-label">Architecture:</span>
@@ -96,24 +101,24 @@
           </div>
           <div class="telemetry-divider"></div>
           <div class="telemetry-item">
-            <span class="telemetry-label">Rendering Engine:</span>
-            <span class="telemetry-val">ReportLab Vector PDF</span>
+            <span class="telemetry-label">Rendering:</span>
+            <span class="telemetry-val">ReportLab 300-DPI Vector</span>
           </div>
           <div class="telemetry-divider"></div>
           <div class="telemetry-item">
             <span class="telemetry-label">Fault Isolation:</span>
-            <span class="telemetry-val text-emerald">Active (Zero-Drop)</span>
+            <span class="telemetry-val text-emerald">Zero-Drop Protected</span>
           </div>
           <div class="telemetry-divider"></div>
           <div class="telemetry-item">
             <span class="telemetry-label">Storage:</span>
-            <span class="telemetry-val">Streamed Chunk ZIP</span>
+            <span class="telemetry-val">Streamed In-Memory ZIP</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Key Architecture Features -->
+    <!-- Key Architecture Features Section -->
     <section class="features-section" id="features">
       <div class="container">
         <div class="section-header">
@@ -150,7 +155,7 @@
       </div>
     </section>
 
-    <!-- Interactive Verification Section in Landing Page -->
+    <!-- Public Verification Section in Landing Page -->
     <section class="verify-section" id="verify">
       <div class="container">
         <div class="verify-box">
@@ -159,11 +164,39 @@
           <p class="verify-sub">Input any credential identifier or scan the embedded QR code to authenticate against the CertiFlow database.</p>
 
           <div class="verify-input-wrap">
-            <input type="text" id="landing-verify-code-input" placeholder="e.g. CERT-A1B2C3D4" class="input-text font-mono">
+            <input type="text" id="landing-verify-code-input" placeholder="e.g. CERT-46BA8BFD" class="input-text font-mono">
             <button class="btn btn-primary" id="btn-landing-verify">Verify Credential</button>
           </div>
 
+          <!-- Quick Test Codes -->
+          <div class="quick-verify-pills" id="landing-quick-codes-wrap">
+            <span class="quick-verify-label">Quick Sample Codes:</span>
+            <div class="pills-flex" id="landing-quick-codes-list">
+              <!-- Dynamically populated from recent jobs or defaults -->
+            </div>
+          </div>
+
           <div class="verify-result-card" id="landing-verify-result-card" style="display: none;"></div>
+
+          <!-- Anti-Scraping Rate Limit Interactive Test -->
+          <div class="rate-limiter-demo-box">
+            <div class="rate-demo-header">
+              <div class="rate-demo-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Sliding-Window Anti-Scraping Protection</span>
+              </div>
+              <span class="cap-badge">60 req / 60s Window</span>
+            </div>
+            <p class="rate-demo-desc">
+              Verification routes are protected against automated scraping bots via in-memory sliding window rate limiting. Test the defense:
+            </p>
+            <div class="rate-demo-actions">
+              <button class="btn btn-secondary btn-sm" id="btn-test-rate-limit">
+                <span>⚡ Simulate Rapid Scraping Burst (65 Requests)</span>
+              </button>
+              <span class="rate-demo-feedback" id="rate-limit-feedback"></span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -181,24 +214,27 @@
       </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Landing Footer -->
     <footer class="footer">
       <div class="container footer-content">
         <div class="footer-left">
           <strong>CertiFlow</strong> • Production-Grade Engineering Assignment for AEREO (SDE Bangalore)
         </div>
         <div class="footer-right">
-          <a href="/docs" target="_blank">Swagger API</a> • 
-          <a href="/health" target="_blank">System Health</a> • 
+          <span>Architected by <strong>Riyanshi Sharma</strong></span>
+          <span>•</span>
+          <a href="/docs" target="_blank">Swagger API</a>
+          <span>•</span>
+          <a href="/health" target="_blank">System Health</a>
+          <span>•</span>
           <button class="link-btn" id="footer-launch-btn">App Console</button>
         </div>
       </div>
     </footer>
   </main>
 
-
   <!-- ======================================================== -->
-  <!-- VIEW 2: DEDICATED MAIN APP WORKSPACE (ON DEMAND)        -->
+  <!-- VIEW 2: DEDICATED MAIN APP WORKSPACE                     -->
   <!-- ======================================================== -->
   <main id="view-app" class="view-hidden">
     <div class="app-workspace">
@@ -211,7 +247,7 @@
           </button>
           <div class="app-status-badge">
             <span class="pulse-dot"></span>
-            <span>Console Active • Ready for Dispatch</span>
+            <span>Console Active • Non-Blocking Concurrency Ready</span>
           </div>
         </div>
 
@@ -219,21 +255,28 @@
         <div class="console-header">
           <div class="console-title-wrap">
             <span class="section-tag">MANAGEMENT CONSOLE</span>
-            <h2 class="section-title">Job Dispatch & Live Telemetry Hub</h2>
-            <p class="console-sub">Submit a batch, watch real-time background execution, preview generated PDFs, and download ZIP archives.</p>
+            <h1 class="console-title">Job Dispatch &amp; Live Telemetry Hub</h1>
+            <p class="console-sub">Submit a batch, watch real-time background execution, preview generated vector PDFs, and download ZIP archives.</p>
           </div>
-          <button class="btn btn-outline-cyan" id="btn-load-demo">
-            ⚡ Load Demo Batch (With Fault Test)
-          </button>
+          <div class="console-header-actions">
+            <button class="btn btn-outline-cyan" id="btn-load-demo">
+              ⚡ Load Demo Batch (With Fault Test)
+            </button>
+          </div>
         </div>
 
+        <!-- 2-Column Console Grid -->
         <div class="console-grid">
-          <!-- Left: Submission Form -->
+          
+          <!-- Left: Submission Form Card -->
           <div class="card form-card">
             <div class="card-header">
-              <h3>1. Create Generation Job</h3>
+              <div class="card-header-left">
+                <span class="card-step-badge">1</span>
+                <h3>Create Generation Job</h3>
+              </div>
               <div class="tabs">
-                <button class="tab-btn active" id="tab-json-btn">JSON Editor</button>
+                <button class="tab-btn active" id="tab-json-btn">JSON Payload</button>
                 <button class="tab-btn" id="tab-csv-btn">CSV Upload</button>
               </div>
             </div>
@@ -242,29 +285,40 @@
             <div class="tab-content" id="tab-json">
               <div class="form-group">
                 <label for="event-title">Event / Course Title</label>
-                <input type="text" id="event-title" value="Aereo Cloud Geospatial & Drone Intelligence Specialist" class="input-text">
+                <input type="text" id="event-title" value="Aereo Cloud Geospatial &amp; Drone Intelligence Specialist" class="input-text">
               </div>
 
               <div class="form-row">
                 <div class="form-group">
-                  <label for="issuer-name">Issuer Name</label>
+                  <label for="issuer-name">Issuer Organization</label>
                   <input type="text" id="issuer-name" value="Aereo Engineering Academy" class="input-text">
                 </div>
                 <div class="form-group">
                   <label for="issue-date">Issue Date</label>
-                  <input type="text" id="issue-date" value="2026-10-07" class="input-text">
+                  <div class="input-with-action">
+                    <input type="text" id="issue-date" value="2026-10-10" class="input-text">
+                    <button type="button" class="input-action-btn" id="btn-set-today">Today</button>
+                  </div>
                 </div>
               </div>
 
               <div class="form-group">
                 <div class="label-row">
                   <label for="recipients-json">Recipients List (JSON Array)</label>
-                  <span class="label-helper" id="recipient-count-badge">5 recipients</span>
+                  <div class="label-actions-group">
+                    <span class="label-helper" id="recipient-count-badge">5 recipients</span>
+                    <button type="button" class="btn-inline-helper" id="btn-load-clean-preset">Clean (4)</button>
+                    <button type="button" class="btn-inline-helper" id="btn-load-large-preset">Large (12)</button>
+                  </div>
                 </div>
-                <textarea id="recipients-json" class="input-textarea" rows="9"></textarea>
+                <textarea id="recipients-json" class="input-textarea font-mono" rows="10" spellcheck="false"></textarea>
+                <div class="textarea-hint-row">
+                  <span class="text-hint">Fields: <code>name</code> (req), <code>email</code> (req), <code>recipient_id</code>, <code>custom_note</code></span>
+                  <button type="button" class="btn-inline-link" id="btn-format-json">Format JSON</button>
+                </div>
               </div>
 
-              <button class="btn btn-primary btn-block" id="btn-submit-job">
+              <button class="btn btn-primary btn-block btn-lg" id="btn-submit-job">
                 <span>Dispatch Bulk Generation Job</span>
                 <span class="btn-spinner" id="submit-spinner" style="display:none;"></span>
               </button>
@@ -273,51 +327,67 @@
             <!-- CSV Mode -->
             <div class="tab-content" id="tab-csv" style="display: none;">
               <div class="form-group">
-                <label for="csv-event-title">Event Title</label>
+                <label for="csv-event-title">Event / Course Title</label>
                 <input type="text" id="csv-event-title" value="Aereo Cloud Drone Survey Engineer" class="input-text">
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="csv-issuer-name">Issuer Name</label>
+                  <label for="csv-issuer-name">Issuer Organization</label>
                   <input type="text" id="csv-issuer-name" value="Aereo Academy" class="input-text">
                 </div>
                 <div class="form-group">
                   <label for="csv-issue-date">Issue Date</label>
-                  <input type="text" id="csv-issue-date" value="2026-10-07" class="input-text">
+                  <input type="text" id="csv-issue-date" value="2026-10-10" class="input-text">
                 </div>
               </div>
               <div class="form-group">
-                <label>Select CSV File</label>
+                <label>Select Recipients CSV File</label>
                 <div class="file-dropzone" id="csv-dropzone">
                   <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
                   <div class="dropzone-inner" id="dropzone-text">
                     <span class="dropzone-icon">📁</span>
-                    <p><strong>Click to browse</strong> or drag & drop CSV file</p>
-                    <span class="dropzone-note">Expected headers: name, email, custom_note</span>
+                    <p><strong>Click to browse</strong> or drag &amp; drop CSV file</p>
+                    <span class="dropzone-note">Expected headers: <code>name</code>, <code>email</code>, <code>recipient_id</code>, <code>custom_note</code></span>
                   </div>
                 </div>
+                <div class="csv-helpers-row">
+                  <button type="button" class="btn-helper-link" id="btn-download-csv-template">
+                    📥 Download CSV Template
+                  </button>
+                  <button type="button" class="btn-helper-link" id="btn-load-sample-csv">
+                    ⚡ Load Sample Recipient File
+                  </button>
+                </div>
               </div>
-              <button class="btn btn-primary btn-block" id="btn-submit-csv">
-                <span>Upload CSV & Dispatch Job</span>
+              <button class="btn btn-primary btn-block btn-lg" id="btn-submit-csv">
+                <span>Upload CSV &amp; Dispatch Job</span>
               </button>
             </div>
           </div>
 
-          <!-- Right: Real-time Telemetry & Status -->
+          <!-- Right: Real-Time Telemetry Card -->
           <div class="card status-card">
             <div class="card-header">
-              <h3>2. Live Worker Telemetry</h3>
+              <div class="card-header-left">
+                <span class="card-step-badge">2</span>
+                <h3>Live Worker Telemetry</h3>
+              </div>
               <span class="status-pill status-idle" id="job-status-pill">IDLE</span>
             </div>
 
             <div class="telemetry-body">
               <div class="job-meta-row">
                 <div>
-                  <span class="meta-label">Active Job ID</span>
-                  <p class="meta-value font-mono" id="active-job-id">—</p>
+                  <span class="meta-label">Active Job UUID</span>
+                  <div class="meta-copy-wrap">
+                    <p class="meta-value font-mono" id="active-job-id">—</p>
+                    <button class="btn-copy-code" id="btn-copy-job-id" title="Copy Job ID" style="display:none;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                  </div>
                 </div>
                 <div class="text-right">
-                  <span class="meta-label">Total Time</span>
+                  <span class="meta-label">Total Elapsed Time</span>
                   <p class="meta-value font-mono" id="job-elapsed-time">—</p>
                 </div>
               </div>
@@ -328,68 +398,138 @@
                   <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
                 </div>
                 <div class="progress-stats">
-                  <span id="progress-pct">0%</span>
+                  <span id="progress-pct" class="font-mono">0%</span>
                   <span id="progress-counts">0 / 0 Processed</span>
                 </div>
               </div>
 
-              <!-- Metric Counter Pills -->
+              <!-- Metric Counter Boxes -->
               <div class="metrics-counters">
                 <div class="metric-box">
-                  <span class="metric-num text-cyan" id="metric-total">0</span>
+                  <span class="metric-num text-cyan font-mono" id="metric-total">0</span>
                   <span class="metric-lbl">Total</span>
                 </div>
                 <div class="metric-box">
-                  <span class="metric-num text-emerald" id="metric-success">0</span>
-                  <span class="metric-lbl">Successful</span>
+                  <span class="metric-num text-emerald font-mono" id="metric-success">0</span>
+                  <span class="metric-lbl">Issued Clean</span>
                 </div>
                 <div class="metric-box">
-                  <span class="metric-num text-rose" id="metric-failed">0</span>
-                  <span class="metric-lbl">Failed</span>
+                  <span class="metric-num text-rose font-mono" id="metric-failed">0</span>
+                  <span class="metric-lbl">Isolated Faults</span>
                 </div>
               </div>
 
-              <!-- Prominent Fault Incident Breakdown (Explicitly highlights what failed) -->
+              <!-- Prominent Fault Incident Breakdown Drawer -->
               <div class="fault-drawer" id="fault-drawer" style="display: none;">
                 <div class="fault-drawer-header">
                   <div class="fault-badge-wrap">
                     <span class="fault-alert-icon">⚠️</span>
-                    <strong class="fault-drawer-title">Failed Recipients Breakdown (<span id="fault-count">0</span>)</strong>
+                    <strong class="fault-drawer-title">Fault Isolation Boundary Triggered (<span id="fault-count">0</span>)</strong>
                   </div>
                   <span class="fault-safety-tag">🛡️ Zero-Drop Protected</span>
                 </div>
                 <p class="fault-drawer-desc">
-                  The following recipient(s) failed during processing. Errors were <strong>safely isolated</strong> without impacting other valid certificates:
+                  Dirty input data was safely contained in per-record error boundaries. Valid certificates in this cohort were issued without interruption:
                 </p>
                 <div class="fault-list" id="fault-list"></div>
               </div>
 
               <!-- Actions Bar -->
               <div class="telemetry-actions" id="telemetry-actions" style="display: none;">
-                <a href="#" class="btn btn-emerald" id="btn-download-all-zip" target="_blank">
-                  <span>Download All as ZIP (.zip) 📦</span>
+                <a href="#" class="btn btn-emerald btn-block" id="btn-download-all-zip" target="_blank">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  <span>Download In-Memory Streamed ZIP (.zip)</span>
                 </a>
-                <button class="btn btn-outline" id="btn-refresh-status">
-                  Refresh Status ⟳
-                </button>
+                <div class="secondary-actions-row">
+                  <button class="btn btn-outline" id="btn-dispatch-emails" title="Send certificates via email">
+                    📧 Dispatch Emails
+                  </button>
+                  <button class="btn btn-outline" id="btn-refresh-status">
+                    ⟳ Refresh Status
+                  </button>
+                  <button class="btn btn-outline" id="btn-reset-workspace">
+                    🔄 New Batch
+                  </button>
+                </div>
               </div>
+
+              <!-- Idle State Placeholder -->
+              <div class="telemetry-idle-placeholder" id="telemetry-idle-box">
+                <div class="idle-radar-pulse"></div>
+                <p class="idle-text">Dispatch a batch or click <strong>⚡ Load Demo Batch</strong> to begin real-time worker monitoring.</p>
+              </div>
+
             </div>
           </div>
+
         </div>
 
-        <!-- Generated Certificates Gallery -->
-        <div class="gallery-section" id="gallery-section" style="display: none;">
+        <!-- Generated Credentials Audit Table & Registry -->
+        <section class="gallery-section" id="gallery-section" style="display: none;">
           <div class="gallery-header">
-            <h3>Generated Credentials (<span id="gallery-count">0</span>)</h3>
-            <span class="gallery-note">Click "View PDF" to inspect the 300-DPI vector PDF</span>
+            <div>
+              <h3 class="gallery-title">Batch Credential Audit Registry (<span id="gallery-count">0</span>)</h3>
+              <p class="gallery-note">Per-recipient audit with instant in-browser 300-DPI vector PDF preview, verification, and status logs.</p>
+            </div>
+            <span class="cap-badge" id="entries-counter">Showing 0 entries</span>
           </div>
-          <div class="certs-grid" id="certs-grid"></div>
-        </div>
+
+          <!-- Search & Filter Controls -->
+          <div class="table-controls-bar">
+            <div class="search-input-wrap">
+              <svg class="search-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="cert-table-search" placeholder="Filter by recipient name, email, credential code, or ID..." class="input-text">
+            </div>
+
+            <div class="filter-controls-group">
+              <select id="filter-status-select" class="filter-select">
+                <option value="ALL">All Statuses</option>
+                <option value="SUCCESS">✓ Issued Only</option>
+                <option value="FAILED">❌ Isolated Faults Only</option>
+              </select>
+
+              <select id="sort-select" class="filter-select">
+                <option value="DEFAULT">Default Ingestion Order</option>
+                <option value="NAME_ASC">Name (A → Z)</option>
+                <option value="NAME_DESC">Name (Z → A)</option>
+                <option value="STATUS">Status (Faults First)</option>
+                <option value="CODE_ASC">Credential Code (A → Z)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Data Table -->
+          <div class="table-wrapper">
+            <table class="data-table" id="cert-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;" class="sortable-th" data-sort="STATUS">Status ↕</th>
+                  <th style="width: 170px;" class="sortable-th" data-sort="CODE_ASC">Credential Code ↕</th>
+                  <th class="sortable-th" data-sort="NAME_ASC">Recipient Name &amp; ID ↕</th>
+                  <th>Email Address</th>
+                  <th>Distinction / Note / Error</th>
+                  <th style="width: 220px; text-align: right;">Audit Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cert-table-body">
+                <!-- Dynamically populated via app.js -->
+              </tbody>
+            </table>
+
+            <div id="table-empty-state" class="table-empty-state" style="display: none;">
+              <p>No credentials match the current search query or active filter.</p>
+            </div>
+          </div>
+
+        </section>
 
       </div>
     </div>
   </main>
 
-  <script src="/static/app.js"></script>
+  <!-- Toast Notification Hub -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/app.js?v=3.1.0"></script>
 </body>
 </html>
