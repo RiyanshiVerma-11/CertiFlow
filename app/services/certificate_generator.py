@@ -426,16 +426,20 @@ class CertificateGenerator:
 
     @staticmethod
     def _generate_qr_code(certificate_code: str):
-        """Generates an in-memory QR code ImageReader linking to verification."""
+        """Generates an in-memory QR code ImageReader linking to live verification."""
         from reportlab.lib.utils import ImageReader
+        from app.config import settings
+
+        base_url = getattr(settings, "VERIFICATION_BASE_URL", "https://certiflow-w2h9.onrender.com").rstrip("/")
+        verify_url = f"{base_url}/?verify={certificate_code}"
+
         qr = qrcode.QRCode(
-            version=1,
+            version=None,
             error_correction=qrcode.constants.ERROR_CORRECT_M,
             box_size=4,
             border=1,
         )
-        verify_data = f"CERTIFLOW:{certificate_code}"
-        qr.add_data(verify_data)
+        qr.add_data(verify_url)
         qr.make(fit=True)
         img = qr.make_image(fill_color="#0f172a", back_color="white")
         buf = io.BytesIO()

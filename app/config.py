@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     MAX_BATCH_SIZE: int = 1000
     DEFAULT_ISSUER: str = "Aereo Engineering Academy"
     BATCH_COMMIT_SIZE: int = 20
+    VERIFICATION_BASE_URL: str = "https://certiflow-w2h9.onrender.com"
 
     # Task queue configuration ('background' or 'celery')
     TASK_QUEUE_BACKEND: str = "background"

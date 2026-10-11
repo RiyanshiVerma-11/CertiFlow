@@ -18,6 +18,15 @@ export default function PublicVerifier({ initialCode = '', onPreviewPdf }) {
   const [verifyResult, setVerifyResult] = useState(null);
   const [hasQueried, setHasQueried] = useState(false);
 
+  // Automatically authenticate when initialCode is provided (from QR code scan or deep link)
+  React.useEffect(() => {
+    if (initialCode && initialCode.trim()) {
+      const clean = initialCode.trim().toUpperCase();
+      setCode(clean);
+      handleVerify(clean);
+    }
+  }, [initialCode]);
+
   const handleVerify = async (targetCode = code) => {
     if (!targetCode || !targetCode.trim()) return;
     setIsVerifying(true);

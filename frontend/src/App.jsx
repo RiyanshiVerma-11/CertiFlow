@@ -16,6 +16,20 @@ export default function App() {
   const [verifyCode, setVerifyCode] = useState('');
   const [previewPdfUrl, setPreviewPdfUrl] = useState(null);
 
+  // Handle incoming deep-link verification scans (e.g. /?verify=CERT-XXXXXX)
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const codeFromUrl = params.get('verify') || params.get('code');
+      if (codeFromUrl && codeFromUrl.trim()) {
+        setVerifyCode(codeFromUrl.trim().toUpperCase());
+        setActiveTab('verifier');
+      }
+    } catch (e) {
+      console.error('URL parse error:', e);
+    }
+  }, []);
+
   // Triggered when a new job is dispatched from BatchStudio
   const handleJobCreated = (jobId) => {
     setActiveJobId(jobId);
