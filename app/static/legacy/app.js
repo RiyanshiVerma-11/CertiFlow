@@ -6,7 +6,7 @@
 const DEMO_FAULT_RECIPIENTS = [
   {
     "recipient_id": "AEREO-STU-001",
-    "name": "Riyanshi Sharma",
+    "name": "Riyanshi Verma",
     "email": "riyanshi@aereo-academy.in",
     "custom_note": "Rank 1 • Distinguished Flight Lead"
   },
@@ -39,7 +39,7 @@ const DEMO_FAULT_RECIPIENTS = [
 const PRESET_CLEAN = [
   {
     "recipient_id": "AEREO-CERT-101",
-    "name": "Riyanshi Sharma",
+    "name": "Riyanshi Verma",
     "email": "riyanshi@aereo-academy.in",
     "custom_note": "Distinction • Top Performer"
   },
@@ -64,7 +64,7 @@ const PRESET_CLEAN = [
 ];
 
 const PRESET_LARGE = [
-  { "recipient_id": "AEREO-BAT-001", "name": "Riyanshi Sharma", "email": "riyanshi@aereo.in", "custom_note": "Cohort Lead" },
+  { "recipient_id": "AEREO-BAT-001", "name": "Riyanshi Verma", "email": "riyanshi@aereo.in", "custom_note": "Cohort Lead" },
   { "recipient_id": "AEREO-BAT-002", "name": "Marcus Aurelius", "email": "marcus@enterprise.com", "custom_note": "Grade A" },
   { "recipient_id": "AEREO-BAT-003", "name": "Ananya Roy", "email": "ananya.roy@geotech.org", "custom_note": "LiDAR Lead" },
   { "recipient_id": "AEREO-BAT-004", "name": "Carlos Gomez", "email": "carlos.g@drone-survey.io", "custom_note": "Flight Operations" },
@@ -323,7 +323,7 @@ function initDropzone() {
   // Download template CSV
   document.getElementById("btn-download-csv-template")?.addEventListener("click", () => {
     const csvContent = "name,email,recipient_id,custom_note\n" +
-      "Riyanshi Sharma,riyanshi@aereo-academy.in,AEREO-STU-001,Rank 1 • Flight Lead\n" +
+      "Riyanshi Verma,riyanshi@aereo-academy.in,AEREO-STU-001,Rank 1 • Flight Lead\n" +
       "Alex Mercer,alex.mercer@enterprise.org,AEREO-STU-002,Geospatial Analytics\n" +
       "David Chen,david.chen@drone-tech.io,AEREO-STU-003,LiDAR Specialist\n" +
       "Sarah Jenkins,sarah.jenkins@spatial-ai.com,AEREO-STU-004,Photogrammetry Lead\n";
@@ -342,7 +342,7 @@ function initDropzone() {
   // Load sample CSV directly
   document.getElementById("btn-load-sample-csv")?.addEventListener("click", () => {
     const csvContent = "name,email,recipient_id,custom_note\n" +
-      "Riyanshi Sharma,riyanshi@aereo-academy.in,AEREO-STU-001,Rank 1 • Flight Lead\n" +
+      "Riyanshi Verma,riyanshi@aereo-academy.in,AEREO-STU-001,Rank 1 • Flight Lead\n" +
       "Alex Mercer,alex.mercer@enterprise.org,AEREO-STU-002,Geospatial Analytics\n" +
       "David Chen,david.chen@drone-tech.io,AEREO-STU-003,LiDAR Specialist\n" +
       "Faulty Recipient,invalid-email-no-domain,AEREO-FAULT-001,Fault Isolation Test\n" +

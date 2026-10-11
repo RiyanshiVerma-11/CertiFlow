@@ -9,7 +9,7 @@ def test_certificate_download_and_bulk_zip(client):
         "issuer_name": "Aereo Academy",
         "issue_date": "2026-10-07",
         "recipients": [
-            {"name": "Riyanshi Sharma", "email": "riyanshi@example.com"},
+            {"name": "Riyanshi Verma", "email": "riyanshi@example.com"},
             {"name": "Alex Mercer", "email": "alex@example.com"},
         ],
     }

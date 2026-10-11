@@ -7,7 +7,7 @@ def test_email_dispatcher_builds_mime_with_pdf():
     Verifies that personalized emails are constructed with HTML branding and PDF attachment.
     """
     res = EmailDispatcher.dispatch_certificate_email(
-        recipient_name="Riyanshi Sharma",
+        recipient_name="Riyanshi Verma",
         recipient_email="riyanshi@example.com",
         certificate_code="CERT-EMAIL-99",
         event_title="Aereo Cloud Geospatial Intelligence",
@@ -19,7 +19,7 @@ def test_email_dispatcher_builds_mime_with_pdf():
     assert res["status"] in ["delivered_simulated", "sent"]
     assert res["recipient"] == "riyanshi@example.com"
     assert res["certificate_code"] == "CERT-EMAIL-99"
-    assert "Certificate_Riyanshi_Sharma_CERT-EMAIL-99.pdf" in res["attachment_filename"]
+    assert "Certificate_Riyanshi_Verma_CERT-EMAIL-99.pdf" in res["attachment_filename"]
 
 
 def test_job_email_dispatch_endpoint(client):

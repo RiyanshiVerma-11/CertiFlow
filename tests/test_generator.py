@@ -7,7 +7,7 @@ def test_certificate_pdf_generation_integrity(tmp_path):
     output_file = tmp_path / "test_cert_01.pdf"
 
     generated_path = CertificateGenerator.generate_pdf(
-        recipient_name="Riyanshi Sharma",
+        recipient_name="Riyanshi Verma",
         event_title="Aereo Cloud Geospatial Intelligence",
         issuer_name="Aereo Academy",
         issue_date="2026-10-07",

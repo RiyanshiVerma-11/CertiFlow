@@ -114,7 +114,7 @@ curl -X POST "http://localhost:8000/api/v1/jobs" \
     "issue_date": "2026-10-07",
     "recipients": [
       {
-        "name": "Riyanshi Sharma",
+        "name": "Riyanshi Verma",
         "email": "riyanshi@example.com",
         "custom_note": "Distinction • Rank 1"
       },
@@ -272,4 +272,4 @@ The codebase is structured to scale cleanly for production deployments:
 ## 👤 Submission Details
 - **Role:** Software Development Engineer (SDE) Assessment
 - **Company:** AEREO (Bangalore)
-- **Candidate:** Riyanshi Sharma
+- **Candidate:** Riyanshi Verma

@@ -7,7 +7,7 @@ def test_create_bulk_job_success(client):
         "issuer_name": "Aereo Academy",
         "issue_date": "2026-10-07",
         "recipients": [
-            {"name": "Riyanshi Sharma", "email": "riyanshi@example.com", "custom_note": "Top Rank"},
+            {"name": "Riyanshi Verma", "email": "riyanshi@example.com", "custom_note": "Top Rank"},
             {"name": "Alex Mercer", "email": "alex@example.com"},
         ],
     }
