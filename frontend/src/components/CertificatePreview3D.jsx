@@ -164,9 +164,18 @@ export default function CertificatePreview3D({
                     <div className="sig-rule-line" />
                     <div className="sig-issuer-wrapped font-bold">
                       {(() => {
-                        const raw = issuerName || "AEREO Directorate of Flight Operations & Aerial Systems";
-                        const words = raw.trim().split(/\s+/);
-                        if (words.length <= 3) return <div>{raw}</div>;
+                        const raw = (issuerName || "AEREO Directorate of Flight Operations & Aerial Systems").trim();
+                        if (raw.includes(" & ")) {
+                          const parts = raw.split(" & ");
+                          return (
+                            <>
+                              <div className="sig-issuer-line">{parts[0].trim()}</div>
+                              <div className="sig-issuer-line">&amp; {parts[1].trim()}</div>
+                            </>
+                          );
+                        }
+                        const words = raw.split(/\s+/);
+                        if (words.length <= 3) return <div className="sig-issuer-line">{raw}</div>;
                         const mid = Math.ceil(words.length / 2);
                         return (
                           <>

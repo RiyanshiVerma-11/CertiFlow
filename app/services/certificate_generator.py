@@ -153,13 +153,15 @@ class CertificateGenerator:
         c,
         text: str,
         font_name: str = "Helvetica-Bold",
-        font_size: float = 9.5,
+        font_size: float = 8.5,
         max_width: float = 180.0,
     ) -> list[str]:
         """
         Splits an issuer/organization name into balanced lines.
         If the name fits within max_width, returns a single-item list.
-        Otherwise, writes half the name on the first line and the remainder below it.
+        Otherwise, writes line 1 and line 2 (e.g., 'AEREO Directorate of Flight Operations'
+        on line 1, and '& Aerial Systems' on line 2).
+        Prioritizes natural conjunction breaks like ' & ' or ' and '.
         """
         text = text.strip()
         if not text:
@@ -169,12 +171,25 @@ class CertificateGenerator:
         if c.stringWidth(text, font_name, font_size) <= max_width:
             return [text]
 
+        # Prioritize natural conjunction break like " & "
+        if " & " in text:
+            parts = text.split(" & ", 1)
+            l1, l2 = parts[0].strip(), f"& {parts[1].strip()}"
+            if c.stringWidth(l1, font_name, font_size) <= max_width and c.stringWidth(l2, font_name, font_size) <= max_width:
+                return [l1, l2]
+
+        if " and " in text.lower():
+            idx = text.lower().find(" and ")
+            l1 = text[:idx].strip()
+            l2 = text[idx:].strip()
+            if c.stringWidth(l1, font_name, font_size) <= max_width and c.stringWidth(l2, font_name, font_size) <= max_width:
+                return [l1, l2]
+
         words = text.split()
         if len(words) <= 1:
             return [text]
 
-        # Find best split point so that neither line exceeds max_width,
-        # with preference to splitting close to the midpoint (writing half below).
+        # Find best split point so that neither line exceeds max_width
         mid = len(words) // 2
         best_lines = None
         best_score = float("inf")
@@ -360,50 +375,51 @@ class CertificateGenerator:
 
         # 13. Signature & Issuer Block (Bottom-Right)
         sig_center_x = width - 155
-        sig_half_w = 75
+        sig_half_w = 68
 
         # Stylized signature flourish above the line
         c.setFont("Helvetica-Oblique", 12)
         c.setFillColor(cls.COLOR_PRIMARY)
-        c.drawCentredString(sig_center_x, 136, "Dr. Vipul Sharma")
+        c.drawCentredString(sig_center_x, 134, "Dr. Vipul Sharma")
 
         # Signature horizontal line
         c.setStrokeColor(cls.COLOR_PRIMARY)
         c.setLineWidth(1)
-        c.line(sig_center_x - sig_half_w, 124, sig_center_x + sig_half_w, 124)
+        c.line(sig_center_x - sig_half_w, 122, sig_center_x + sig_half_w, 122)
 
-        # Issuer / Organization Name — Balanced across 2 lines if long (half below)
+        # Issuer / Organization Name — Balanced across 2 lines (half on line 1, remainder on line 2)
         issuer_lines = cls._format_issuer_lines(
             c=c,
             text=issuer_name,
             font_name="Helvetica-Bold",
-            font_size=9.5,
+            font_size=8.5,
             max_width=180.0,
         )
 
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFont("Helvetica-Bold", 8.5)
         c.setFillColor(cls.COLOR_PRIMARY)
 
         if len(issuer_lines) <= 1:
             line_text = issuer_lines[0] if issuer_lines else issuer_name
             c.drawCentredString(sig_center_x, 108, line_text)
-            c.setFont("Helvetica", 8.5)
+            c.setFont("Helvetica", 8)
             c.setFillColor(cls.COLOR_MUTED)
             c.drawCentredString(sig_center_x, 92, "Authorized Signatory")
         elif len(issuer_lines) == 2:
-            # First half on line 1, second half below it
-            c.drawCentredString(sig_center_x, 110, issuer_lines[0])
-            c.drawCentredString(sig_center_x, 97, issuer_lines[1])
-            c.setFont("Helvetica", 8.5)
-            c.setFillColor(cls.COLOR_MUTED)
-            c.drawCentredString(sig_center_x, 81, "Authorized Signatory")
-        else:
-            c.drawCentredString(sig_center_x, 112, issuer_lines[0])
-            c.drawCentredString(sig_center_x, 100, issuer_lines[1])
-            c.drawCentredString(sig_center_x, 88, issuer_lines[2])
+            # First line (e.g., AEREO Directorate of Flight Operations)
+            c.drawCentredString(sig_center_x, 108, issuer_lines[0])
+            # Second line below it (e.g., & Aerial Systems)
+            c.drawCentredString(sig_center_x, 96, issuer_lines[1])
             c.setFont("Helvetica", 8)
             c.setFillColor(cls.COLOR_MUTED)
-            c.drawCentredString(sig_center_x, 74, "Authorized Signatory")
+            c.drawCentredString(sig_center_x, 82, "Authorized Signatory")
+        else:
+            c.drawCentredString(sig_center_x, 110, issuer_lines[0])
+            c.drawCentredString(sig_center_x, 98, issuer_lines[1])
+            c.drawCentredString(sig_center_x, 86, issuer_lines[2])
+            c.setFont("Helvetica", 7.5)
+            c.setFillColor(cls.COLOR_MUTED)
+            c.drawCentredString(sig_center_x, 72, "Authorized Signatory")
 
         c.showPage()
         c.save()
