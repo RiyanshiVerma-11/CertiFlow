@@ -111,6 +111,7 @@ def verify_certificate(certificate_code: str, db: Session = Depends(get_db)):
         issue_date=issue_date,
         custom_note=cert.custom_note,
         issued_at=cert.created_at,
+        download_url=f"/api/v1/certificates/{cert.id}/download",
         status="VERIFIED_VALID",
         message="Official verified credential authenticated in CertiFlow registry.",
     )

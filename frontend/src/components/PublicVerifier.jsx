@@ -81,6 +81,21 @@ export default function PublicVerifier({ initialCode = '', onPreviewPdf }) {
             <ArrowRight size={16} />
           </button>
         </div>
+
+        {/* Quick Sample Code for Instant Recruiter Evaluation */}
+        <div className="verifier-quick-sample">
+          <span className="sample-label">⚡ Recruiter Quick Test:</span>
+          <button
+            type="button"
+            className="sample-code-pill font-mono"
+            onClick={() => {
+              setCode('CERT-AEREO-DEMO-001');
+              handleVerify('CERT-AEREO-DEMO-001');
+            }}
+          >
+            CERT-AEREO-DEMO-001
+          </button>
+        </div>
       </div>
 
       {/* Verification Result Card */}

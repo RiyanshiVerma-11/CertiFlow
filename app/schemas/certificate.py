@@ -69,5 +69,6 @@ class CertificateVerifyResponse(BaseModel):
     issue_date: Optional[str] = None
     custom_note: Optional[str] = None
     issued_at: Optional[datetime] = None
+    download_url: Optional[str] = None
     status: str
     message: str
