@@ -1,12 +1,15 @@
 # 🎓 CertiFlow — Bulk Certificate Generator Service
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://certiflow-w2h9.onrender.com)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%2B-red)](https://www.sqlalchemy.org)
 [![Tests](https://img.shields.io/badge/Tests-34%20Passed%20(100%25)-brightgreen)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-> **A backend service for high-volume certificate generation, status tracking, and retrieval built with Python, FastAPI, SQLAlchemy, and ReportLab.**  
+> 🌐 **Live Demo Application:** [https://certiflow-w2h9.onrender.com](https://certiflow-w2h9.onrender.com)  
+> 📖 **Interactive OpenAPI / Swagger UI:** [https://certiflow-w2h9.onrender.com/docs](https://certiflow-w2h9.onrender.com/docs)  
+> **A high-volume certificate generation, status tracking, and retrieval service built with Python, FastAPI, SQLAlchemy, and ReportLab.**  
 > *Developed for the AEREO Software Development Engineer (SDE) Assessment.*
 
 ---
@@ -42,7 +45,7 @@ This application addresses the problem of bulk certificate generation for events
 ### 1. Setup & Installation
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/certiflow.git
+git clone https://github.com/RiyanshiVerma-11/CertiFlow.git
 cd certiflow
 
 # Create and activate virtual environment

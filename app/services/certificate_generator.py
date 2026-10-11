@@ -98,6 +98,117 @@ class CertificateGenerator:
         return local_path if local_path is not None else Path(storage_key)
 
     @classmethod
+    def _draw_wrapped_centered_text(
+        cls,
+        c: canvas.Canvas,
+        text: str,
+        x_center: float,
+        y_start: float,
+        max_width: float,
+        font_name: str,
+        font_size: float,
+        line_spacing: float,
+        text_color,
+        max_lines: int = 3,
+    ) -> float:
+        """
+        Splits text into words and wraps across lines if it exceeds max_width.
+        Draws each line centered at x_center, stepping down by line_spacing.
+        """
+        c.setFont(font_name, font_size)
+        c.setFillColor(text_color)
+        words = text.split()
+        if not words:
+            return y_start
+
+        lines = []
+        current_line = []
+
+        for word in words:
+            test_line = " ".join(current_line + [word])
+            w = c.stringWidth(test_line, font_name, font_size)
+            if w <= max_width or not current_line:
+                current_line.append(word)
+            else:
+                lines.append(" ".join(current_line))
+                current_line = [word]
+
+        if current_line:
+            lines.append(" ".join(current_line))
+
+        if len(lines) > max_lines:
+            lines = lines[:max_lines]
+            lines[-1] = lines[-1] + "..."
+
+        curr_y = y_start
+        for line in lines:
+            c.drawCentredString(x_center, curr_y, line)
+            curr_y -= line_spacing
+
+        return curr_y
+
+    @classmethod
+    def _format_issuer_lines(
+        cls,
+        c,
+        text: str,
+        font_name: str = "Helvetica-Bold",
+        font_size: float = 9.5,
+        max_width: float = 180.0,
+    ) -> list[str]:
+        """
+        Splits an issuer/organization name into balanced lines.
+        If the name fits within max_width, returns a single-item list.
+        Otherwise, writes half the name on the first line and the remainder below it.
+        """
+        text = text.strip()
+        if not text:
+            return []
+
+        # If it already fits safely on a single line inside the border
+        if c.stringWidth(text, font_name, font_size) <= max_width:
+            return [text]
+
+        words = text.split()
+        if len(words) <= 1:
+            return [text]
+
+        # Find best split point so that neither line exceeds max_width,
+        # with preference to splitting close to the midpoint (writing half below).
+        mid = len(words) // 2
+        best_lines = None
+        best_score = float("inf")
+
+        for split_at in range(1, len(words)):
+            l1 = " ".join(words[:split_at])
+            l2 = " ".join(words[split_at:])
+            w1 = c.stringWidth(l1, font_name, font_size)
+            w2 = c.stringWidth(l2, font_name, font_size)
+
+            if w1 <= max_width and w2 <= max_width:
+                score = abs(w1 - w2) + abs(split_at - mid) * 15
+                if score < best_score:
+                    best_score = score
+                    best_lines = [l1, l2]
+
+        if best_lines:
+            return best_lines
+
+        # Fallback greedy word-wrap if an unusually long string exceeds 2 lines
+        lines = []
+        curr = []
+        for w in words:
+            test = " ".join(curr + [w])
+            if c.stringWidth(test, font_name, font_size) <= max_width or not curr:
+                curr.append(w)
+            else:
+                lines.append(" ".join(curr))
+                curr = [w]
+        if curr:
+            lines.append(" ".join(curr))
+        return lines[:3]
+
+    @classmethod
     def _render_canvas(
         cls,
         target,
@@ -112,21 +223,21 @@ class CertificateGenerator:
         c = canvas.Canvas(target, pagesize=landscape(A4))
         width, height = cls.PAGE_WIDTH, cls.PAGE_HEIGHT
 
-        # 1. Background Fill
-        c.setFillColor(colors.HexColor("#fafafa"))
+        # 1. Background Fill (Subtle warm executive ivory)
+        c.setFillColor(colors.HexColor("#faf9f6"))
         c.rect(0, 0, width, height, stroke=0, fill=1)
 
-        # 2. Outer Border (Deep Slate)
+        # 2. Outer Border (Deep Slate Navy)
         c.setStrokeColor(cls.COLOR_PRIMARY)
-        c.setLineWidth(5)
+        c.setLineWidth(4.5)
         c.rect(24, 24, width - 48, height - 48, stroke=1, fill=0)
 
-        # 3. Inner Decorative Border (Gold)
+        # 3. Inner Decorative Border (Rich Gold)
         c.setStrokeColor(cls.COLOR_GOLD)
         c.setLineWidth(1.5)
         c.rect(32, 32, width - 64, height - 64, stroke=1, fill=0)
 
-        # 4. Corner Geometric Accents (Modern tech aesthetic)
+        # 4. Corner Geometric Accents (Modern aerospace aesthetic)
         corner_size = 20
         c.setStrokeColor(cls.COLOR_GOLD)
         c.setLineWidth(2)
@@ -165,45 +276,61 @@ class CertificateGenerator:
 
         c.setFillColor(cls.COLOR_PRIMARY)
         c.setFont("Helvetica-Bold", name_font_size)
-        c.drawCentredString(width / 2, 388, recipient_name)
+        c.drawCentredString(width / 2, 392, recipient_name)
 
         # Name Underline flourish
-        name_width = min(max(len(recipient_name) * 14, 200), width - 200)
+        name_width = min(max(len(recipient_name) * 14, 200), width - 220)
         c.setStrokeColor(cls.COLOR_GOLD)
         c.setLineWidth(2)
-        c.line((width - name_width) / 2, 374, (width + name_width) / 2, 374)
+        c.line((width - name_width) / 2, 376, (width + name_width) / 2, 376)
 
         # 7. Context / Reason Description
         c.setFillColor(cls.COLOR_SECONDARY)
         c.setFont("Helvetica", 13)
         c.drawCentredString(
             width / 2,
-            322,
+            324,
             "for successfully completing the curriculum and demonstrating proficiency in",
         )
 
-        # 8. Event / Course Title
-        c.setFillColor(cls.COLOR_ACCENT)
-        c.setFont("Helvetica-Bold", 19)
-        title_y = 280 if custom_note else 268
-        c.drawCentredString(width / 2, title_y, event_title)
+        # 8. Event / Course Title (Wrapped safely within margins)
+        title_y = 282 if custom_note else 272
+        title_w = c.stringWidth(event_title, "Helvetica-Bold", 19)
+        if title_w > (width - 180):
+            # Auto-wrap long titles
+            cls._draw_wrapped_centered_text(
+                c=c,
+                text=event_title,
+                x_center=width / 2,
+                y_start=title_y,
+                max_width=width - 200,
+                font_name="Helvetica-Bold",
+                font_size=17,
+                line_spacing=22,
+                text_color=cls.COLOR_ACCENT,
+                max_lines=2,
+            )
+        else:
+            c.setFillColor(cls.COLOR_ACCENT)
+            c.setFont("Helvetica-Bold", 19)
+            c.drawCentredString(width / 2, title_y, event_title)
 
         # 9. Optional Custom Note / Honors Distinction Badge
         if custom_note:
             pill_text = f"★  {custom_note}  ★"
-            c.setFont("Helvetica-Bold", 11)
-            text_w = c.stringWidth(pill_text, "Helvetica-Bold", 11)
+            c.setFont("Helvetica-Bold", 10.5)
+            text_w = c.stringWidth(pill_text, "Helvetica-Bold", 10.5)
             pill_w = text_w + 32
-            pill_h = 24
+            pill_h = 22
             pill_x = (width - pill_w) / 2
-            pill_y = 230
+            pill_y = 228
             # Executive gold-tinted honors badge
             c.setFillColor(cls.COLOR_GOLD_LIGHT)
             c.setStrokeColor(cls.COLOR_GOLD)
             c.setLineWidth(1)
-            c.roundRect(pill_x, pill_y, pill_w, pill_h, 6, fill=1, stroke=1)
+            c.roundRect(pill_x, pill_y, pill_w, pill_h, 5, fill=1, stroke=1)
             c.setFillColor(colors.HexColor("#b45309"))
-            c.drawCentredString(width / 2, pill_y + 7, pill_text)
+            c.drawCentredString(width / 2, pill_y + 6, pill_text)
 
         # 10. Divider Line
         c.setStrokeColor(cls.COLOR_BORDER)
@@ -232,17 +359,51 @@ class CertificateGenerator:
         c.drawCentredString(width / 2, 92, "Digitally signed and archived in the CertiFlow registry")
 
         # 13. Signature & Issuer Block (Bottom-Right)
+        sig_center_x = width - 155
+        sig_half_w = 75
+
+        # Stylized signature flourish above the line
+        c.setFont("Helvetica-Oblique", 12)
+        c.setFillColor(cls.COLOR_PRIMARY)
+        c.drawCentredString(sig_center_x, 136, "Dr. Vipul Sharma")
+
+        # Signature horizontal line
         c.setStrokeColor(cls.COLOR_PRIMARY)
         c.setLineWidth(1)
-        c.line(width - 240, 125, width - 70, 125)
+        c.line(sig_center_x - sig_half_w, 124, sig_center_x + sig_half_w, 124)
 
+        # Issuer / Organization Name — Balanced across 2 lines if long (half below)
+        issuer_lines = cls._format_issuer_lines(
+            c=c,
+            text=issuer_name,
+            font_name="Helvetica-Bold",
+            font_size=9.5,
+            max_width=180.0,
+        )
+
+        c.setFont("Helvetica-Bold", 9.5)
         c.setFillColor(cls.COLOR_PRIMARY)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawCentredString(width - 155, 108, issuer_name)
 
-        c.setFillColor(cls.COLOR_MUTED)
-        c.setFont("Helvetica", 9)
-        c.drawCentredString(width - 155, 92, "Authorized Signatory")
+        if len(issuer_lines) <= 1:
+            line_text = issuer_lines[0] if issuer_lines else issuer_name
+            c.drawCentredString(sig_center_x, 108, line_text)
+            c.setFont("Helvetica", 8.5)
+            c.setFillColor(cls.COLOR_MUTED)
+            c.drawCentredString(sig_center_x, 92, "Authorized Signatory")
+        elif len(issuer_lines) == 2:
+            # First half on line 1, second half below it
+            c.drawCentredString(sig_center_x, 110, issuer_lines[0])
+            c.drawCentredString(sig_center_x, 97, issuer_lines[1])
+            c.setFont("Helvetica", 8.5)
+            c.setFillColor(cls.COLOR_MUTED)
+            c.drawCentredString(sig_center_x, 81, "Authorized Signatory")
+        else:
+            c.drawCentredString(sig_center_x, 112, issuer_lines[0])
+            c.drawCentredString(sig_center_x, 100, issuer_lines[1])
+            c.drawCentredString(sig_center_x, 88, issuer_lines[2])
+            c.setFont("Helvetica", 8)
+            c.setFillColor(cls.COLOR_MUTED)
+            c.drawCentredString(sig_center_x, 74, "Authorized Signatory")
 
         c.showPage()
         c.save()

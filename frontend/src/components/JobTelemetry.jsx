@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -13,7 +13,14 @@ import {
   Clock,
   Zap,
   Eye,
-  FileArchive
+  FileArchive,
+  Search,
+  Filter,
+  Table,
+  LayoutGrid,
+  Check,
+  XCircle,
+  Copy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -25,6 +32,12 @@ export default function JobTelemetry({ jobId, onSelectVerifyCode, onPreviewPdf }
   const [isEmailSending, setIsEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState(null);
   const [confettiFired, setConfettiFired] = useState(false);
+
+  // Table filters & view state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SUCCESS' | 'FAILED'
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'card'
+  const [copiedCode, setCopiedCode] = useState(null);
 
   // Poll job status
   useEffect(() => {
@@ -125,6 +138,61 @@ export default function JobTelemetry({ jobId, onSelectVerifyCode, onPreviewPdf }
       setIsEmailSending(false);
     }
   };
+
+  // Copy code helper
+  const handleCopyCode = (code) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  // Combine successful certs and isolated failure records for comprehensive table inspection
+  const unifiedRecords = useMemo(() => {
+    const list = certificates.map((c) => ({
+      ...c,
+      isSuccess: true,
+      displayStatus: 'READY',
+      recipient_id: c.recipient_id || 'N/A',
+    }));
+
+    if (job?.failures && Array.isArray(job.failures)) {
+      job.failures.forEach((f, idx) => {
+        list.push({
+          id: `fail-${idx}`,
+          recipient_name: f.recipient_name || 'Anonymous Recipient',
+          recipient_email: f.recipient_email || 'Not provided',
+          recipient_id: f.recipient_id || 'N/A',
+          certificate_code: 'QUARANTINED',
+          isSuccess: false,
+          displayStatus: 'QUARANTINED',
+          error_message: f.error_message || 'Malformed schema / Validation fault',
+        });
+      });
+    }
+
+    return list;
+  }, [certificates, job?.failures]);
+
+  // Filtered records
+  const filteredRecords = useMemo(() => {
+    return unifiedRecords.filter((item) => {
+      // 1. Status Filter
+      if (statusFilter === 'SUCCESS' && !item.isSuccess) return false;
+      if (statusFilter === 'FAILED' && item.isSuccess) return false;
+
+      // 2. Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const nameMatch = (item.recipient_name || '').toLowerCase().includes(q);
+        const emailMatch = (item.recipient_email || '').toLowerCase().includes(q);
+        const codeMatch = (item.certificate_code || '').toLowerCase().includes(q);
+        const idMatch = (item.recipient_id || '').toLowerCase().includes(q);
+        return nameMatch || emailMatch || codeMatch || idMatch;
+      }
+
+      return true;
+    });
+  }, [unifiedRecords, statusFilter, searchQuery]);
 
   if (!jobId) {
     return (
@@ -301,50 +369,227 @@ export default function JobTelemetry({ jobId, onSelectVerifyCode, onPreviewPdf }
               </p>
             </div>
           </div>
-
-          {job.failures && job.failures.length > 0 && (
-            <div className="fault-list">
-              {job.failures.map((fail, idx) => (
-                <div key={idx} className="fault-item">
-                  <span className="fault-name">
-                    {fail.recipient_name || 'Unknown Recipient'}
-                  </span>
-                  <span className="fault-email font-mono">
-                    {fail.recipient_email || 'No email provided'}
-                  </span>
-                  <span className="fault-reason font-mono">
-                    ⚠️ {fail.error_message || 'Malformed schema'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </motion.div>
       )}
 
-      {/* Generated Certificates Waterfall */}
-      <div className="glass-panel cert-grid-card">
-        <div className="cert-grid-header">
-          <div className="grid-header-title">
-            <FileCheck size={20} className="text-emerald" />
-            <h3>Generated Credentials ({certificates.length} Artifacts)</h3>
+      {/* ======================================================== */}
+      {/* CREDENTIAL REGISTRY TABLE & FILTER SUITE                 */}
+      {/* ======================================================== */}
+      <div className="glass-panel cert-registry-panel">
+        <div className="registry-header-bar">
+          <div className="registry-title-group">
+            <FileCheck size={22} className="text-emerald" />
+            <div>
+              <h3 className="registry-heading">Credential Registry & Verification Ledger</h3>
+              <span className="registry-sub">
+                Showing {filteredRecords.length} of {unifiedRecords.length} records • 300-DPI Vector PDFs
+              </span>
+            </div>
           </div>
-          <span className="caption-text">
-            All certificates generated with embedded SHA-256 QR authentication seals.
-          </span>
+
+          <div className="view-mode-toggle">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`view-btn ${viewMode === 'table' ? 'active' : ''}`}
+              title="Table View (Recommended)"
+            >
+              <Table size={15} />
+              <span>Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode('card')}
+              className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
+              title="Card Grid View"
+            >
+              <LayoutGrid size={15} />
+              <span>Cards</span>
+            </button>
+          </div>
         </div>
 
-        {certificates.length === 0 ? (
-          <div className="empty-cert-state">
-            {isRunning ? (
-              <p>Worker thread pool actively synthesizing credentials...</p>
-            ) : (
-              <p>No successful certificates generated for this batch.</p>
+        {/* Search & Filter Controls Bar */}
+        <div className="registry-filter-bar">
+          {/* Search Box */}
+          <div className="table-search-input-wrapper">
+            <Search size={16} className="search-icon-inside" />
+            <input
+              type="text"
+              className="table-search-field"
+              placeholder="Filter by candidate name, email, ID, or certificate code..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="search-clear-btn"
+                title="Clear search"
+              >
+                ×
+              </button>
             )}
           </div>
+
+          {/* Status Filter Pills */}
+          <div className="status-filter-pills">
+            <button
+              onClick={() => setStatusFilter('ALL')}
+              className={`filter-pill ${statusFilter === 'ALL' ? 'active' : ''}`}
+            >
+              All Records ({unifiedRecords.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('SUCCESS')}
+              className={`filter-pill pill-success ${statusFilter === 'SUCCESS' ? 'active' : ''}`}
+            >
+              Ready ({successful})
+            </button>
+            {failed > 0 && (
+              <button
+                onClick={() => setStatusFilter('FAILED')}
+                className={`filter-pill pill-failed ${statusFilter === 'FAILED' ? 'active' : ''}`}
+              >
+                Quarantined ({failed})
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* TABLE VIEW (PRIMARY) */}
+        {viewMode === 'table' ? (
+          <div className="registry-table-container">
+            <table className="telemetry-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '48px' }}>#</th>
+                  <th>Candidate Full Name</th>
+                  <th>Email Address</th>
+                  <th>Recipient ID</th>
+                  <th>Credential Code</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right', width: '240px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="empty-table-cell">
+                      {isRunning ? (
+                        <span>Synthesizing credentials in background worker pool...</span>
+                      ) : (
+                        <span>No records matching the selected search query or filter.</span>
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRecords.map((item, idx) => (
+                    <tr key={item.id || idx} className={`table-row-${item.displayStatus.toLowerCase()}`}>
+                      <td className="font-mono text-muted">{idx + 1}</td>
+                      <td>
+                        <div className="candidate-name-cell">
+                          <div className={`candidate-avatar ${item.isSuccess ? 'avatar-ready' : 'avatar-fail'}`}>
+                            {(item.recipient_name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <span className="candidate-name-text">{item.recipient_name}</span>
+                        </div>
+                      </td>
+                      <td className="font-mono text-secondary">
+                        {item.recipient_email}
+                      </td>
+                      <td>
+                        <span className="badge-recipient-id font-mono">
+                          {item.recipient_id}
+                        </span>
+                      </td>
+                      <td>
+                        {item.isSuccess ? (
+                          <div className="cert-code-cell">
+                            <span className="code-pill font-mono">
+                              {item.certificate_code}
+                            </span>
+                            <button
+                              onClick={() => handleCopyCode(item.certificate_code)}
+                              className="copy-code-btn"
+                              title="Copy Certificate Code"
+                            >
+                              {copiedCode === item.certificate_code ? (
+                                <Check size={12} className="text-emerald" />
+                              ) : (
+                                <Copy size={12} />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="code-pill-failed font-mono">
+                            QUARANTINED
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {item.isSuccess ? (
+                          <span className="pill-status-ready">
+                            <CheckCircle2 size={12} />
+                            <span>READY</span>
+                          </span>
+                        ) : (
+                          <span
+                            className="pill-status-quarantined"
+                            title={item.error_message}
+                          >
+                            <ShieldAlert size={12} />
+                            <span>FAULT ISOLATED</span>
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {item.isSuccess ? (
+                          <div className="table-actions-strip">
+                            <button
+                              onClick={() =>
+                                onPreviewPdf(
+                                  `/api/v1/certificates/${item.id}/download?disposition=inline`
+                                )
+                              }
+                              className="btn btn-secondary btn-sm"
+                              title="Preview 300-DPI Vector PDF in Modal"
+                            >
+                              <Eye size={13} />
+                              <span>View PDF</span>
+                            </button>
+                            <a
+                              href={`/api/v1/certificates/${item.id}/download?disposition=attachment`}
+                              download
+                              className="btn btn-secondary btn-sm"
+                              title="Download PDF directly"
+                            >
+                              <Download size={13} />
+                              <span>Download</span>
+                            </a>
+                            <button
+                              onClick={() => onSelectVerifyCode(item.certificate_code)}
+                              className="btn btn-secondary btn-sm"
+                              title="Verify Cryptographic Authenticity"
+                            >
+                              <ExternalLink size={13} />
+                              <span>Verify</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="fault-detail-snippet text-rose font-mono">
+                            {item.error_message}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         ) : (
+          /* CARD GRID VIEW (ALTERNATIVE) */
           <div className="cert-waterfall-grid">
-            {certificates.map((cert) => (
+            {filteredRecords.map((cert) => (
               <motion.div
                 key={cert.id}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -355,7 +600,9 @@ export default function JobTelemetry({ jobId, onSelectVerifyCode, onPreviewPdf }
                   <span className="cert-card-code font-mono">
                     {cert.certificate_code}
                   </span>
-                  <span className="cert-status-badge">READY</span>
+                  <span className={cert.isSuccess ? 'cert-status-badge' : 'cert-status-badge badge-rose'}>
+                    {cert.displayStatus}
+                  </span>
                 </div>
                 <div className="cert-card-recipient">
                   <h4>{cert.recipient_name}</h4>
@@ -363,31 +610,40 @@ export default function JobTelemetry({ jobId, onSelectVerifyCode, onPreviewPdf }
                     {cert.recipient_email}
                   </span>
                 </div>
-                <div className="cert-card-actions">
-                  <button
-                    onClick={() => onPreviewPdf(`/api/v1/certificates/${cert.id}/download?disposition=inline`)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Eye size={13} />
-                    <span>View PDF</span>
-                  </button>
-                  <a
-                    href={`/api/v1/certificates/${cert.id}/download?disposition=attachment`}
-                    download
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Download size={13} />
-                    <span>Download</span>
-                  </a>
-                  <button
-                    onClick={() => onSelectVerifyCode(cert.certificate_code)}
-                    className="btn btn-secondary btn-sm"
-                    title="Verify cryptographic authenticity"
-                  >
-                    <ExternalLink size={13} />
-                    <span>Verify</span>
-                  </button>
-                </div>
+                {cert.isSuccess ? (
+                  <div className="cert-card-actions">
+                    <button
+                      onClick={() =>
+                        onPreviewPdf(
+                          `/api/v1/certificates/${cert.id}/download?disposition=inline`
+                        )
+                      }
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <Eye size={13} />
+                      <span>View PDF</span>
+                    </button>
+                    <a
+                      href={`/api/v1/certificates/${cert.id}/download?disposition=attachment`}
+                      download
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <Download size={13} />
+                      <span>Download</span>
+                    </a>
+                    <button
+                      onClick={() => onSelectVerifyCode(cert.certificate_code)}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <ExternalLink size={13} />
+                      <span>Verify</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-rose font-mono text-sm">
+                    ⚠️ {cert.error_message}
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
